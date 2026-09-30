@@ -1,7 +1,7 @@
 // PostoLibero – service worker: rende l'app installabile e apribile offline.
 // I dati (parcheggi, segnalazioni) vengono sempre scaricati dalla rete.
-const CACHE = "postolibero-v1";
-const FILE = ["./", "index.html", "style.css", "config.js", "js/core.js", "js/segnalazioni.js", "js/app.js", "icon.svg", "manifest.webmanifest"];
+const CACHE = "postolibero-v2";
+const FILE = ["./", "index.html", "style.css", "config.js", "core.js", "segnalazioni.js", "app.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILE)).then(() => self.skipWaiting()));
