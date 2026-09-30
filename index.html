@@ -43,14 +43,28 @@
         <button class="fab" id="btn-centra" type="button" title="Torna alla mia posizione" aria-label="Torna alla mia posizione">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
         </button>
+        <button class="fab fab-nero" id="btn-elenco" type="button" title="Elenco dei posti vicini" aria-label="Apri l'elenco dei posti vicini" aria-controls="pannello" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="4.5" cy="6" r="1.6" fill="currentColor"/><circle cx="4.5" cy="12" r="1.6" fill="currentColor"/><circle cx="4.5" cy="18" r="1.6" fill="currentColor"/></svg>
+          <span class="badge" id="badge-elenco" hidden></span>
+        </button>
         <button class="fab" id="btn-aggiorna" type="button" title="Aggiorna" aria-label="Aggiorna i dati">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        <button class="fab fab-verde" id="btn-libero" type="button" title="Segnala un posto libero qui" aria-label="Segnala un posto libero dove ti trovi">
+          <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 6.5v7M8.5 10h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
       </div>
+    </main>
 
-      <section class="pannello" id="pannello" aria-label="Posti vicini">
-        <button class="maniglia" id="maniglia" type="button" aria-label="Espandi o riduci l'elenco" aria-expanded="false"><span></span></button>
+    <section class="pannello" id="pannello" aria-label="Posti vicini" hidden>
+      <header class="pannello-testa">
+        <h2>Posti vicini</h2>
+        <button class="chiudi" id="btn-chiudi" type="button" aria-label="Chiudi l'elenco e torna alla mappa">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+      </header>
 
+      <div class="pannello-corpo">
         <div class="stato" id="stato" role="status" aria-live="polite">Cerco la tua posizione…</div>
 
         <div class="sommario" id="sommario">
@@ -59,12 +73,7 @@
           <div class="kpi kpi-osm"><b id="k-osm">–</b><span>aree di sosta<br>in zona</span></div>
         </div>
 
-        <div class="azioni">
-          <button class="btn btn-libero" id="btn-libero" type="button">
-            <span class="dot" aria-hidden="true"></span>Posto libero qui
-          </button>
-          <button class="btn btn-occupato" id="btn-parcheggiato" type="button">Ho parcheggiato</button>
-        </div>
+        <button class="btn btn-occupato" id="btn-parcheggiato" type="button">Ho parcheggiato qui</button>
 
         <div class="filtri" role="group" aria-label="Filtri">
           <button class="chip" type="button" data-filtro="gratuito" aria-pressed="false">Gratuiti</button>
@@ -80,8 +89,8 @@
           <span id="fonti-extra"></span>.
           Le aree di sosta OSM indicano dove si può parcheggiare, non se c'è posto in questo momento.
         </footer>
-      </section>
-    </main>
+      </div>
+    </section>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

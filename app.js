@@ -24,7 +24,6 @@
     maxZoom: 19,
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
   }).addTo(mappa);
-  L.control.zoom({ position: "topright" }).addTo(mappa);
 
   const livelli = {
     raggio: L.layerGroup().addTo(mappa),
@@ -50,6 +49,7 @@
     const el = $("stato");
     el.textContent = testo;
     el.classList.toggle("errore", !!errore);
+    if (errore && $("pannello").hidden) toast(testo);
   }
   let timerToast;
   function toast(testo) {
@@ -237,6 +237,9 @@
     // KPI
     $("k-reale").textContent = stato.reale.length ? stato.reale.reduce((t, l) => t + (l.liberi || 0), 0) : "n/d";
     $("k-segn").textContent = stato.segn.filter((s) => s.stato === "libero").length;
+    const certi = stato.segn.filter((s) => s.stato === "libero").length + stato.reale.filter((l) => l.liberi > 0).length;
+    $("badge-elenco").textContent = certi > 99 ? "99+" : String(certi);
+    $("badge-elenco").hidden = certi === 0;
     $("k-osm").textContent = stato.osm.filter((l) => l.categoria === "parcheggio" || l.categoria === "strada").length;
 
     renderLista(osm, reale, segnVisibili);
@@ -258,7 +261,7 @@
       stato.seguiGps = false;
       mappa.setView([l.lat, l.lon], Math.max(mappa.getZoom(), 17));
       if (m) setTimeout(() => m.openPopup(), 250);
-      $("pannello").classList.remove("aperto");
+      chiudiElenco();
     };
     li.addEventListener("click", apri);
     li.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); apri(); } });
@@ -423,11 +426,20 @@
     c.setAttribute("aria-pressed", String(on));
     render();
   }));
-  $("maniglia").addEventListener("click", () => {
-    const p = $("pannello");
-    p.classList.toggle("aperto");
-    $("maniglia").setAttribute("aria-expanded", String(p.classList.contains("aperto")));
-  });
+  function apriElenco() {
+    $("pannello").hidden = false;
+    $("btn-elenco").setAttribute("aria-expanded", "true");
+    $("btn-chiudi").focus();
+  }
+  function chiudiElenco() {
+    if ($("pannello").hidden) return;
+    $("pannello").hidden = true;
+    $("btn-elenco").setAttribute("aria-expanded", "false");
+    $("btn-elenco").focus();
+  }
+  $("btn-elenco").addEventListener("click", apriElenco);
+  $("btn-chiudi").addEventListener("click", chiudiElenco);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") chiudiElenco(); });
 
   // Aggiornamenti periodici: segnalazioni ogni minuto, tutto ogni 3 minuti
   setInterval(async () => { await caricaSegnalazioni(); render(); }, 60000);

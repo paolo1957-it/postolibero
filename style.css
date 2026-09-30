@@ -1,4 +1,4 @@
-/* Layout: mappa a tutto schermo, pannello a scomparsa dal basso (a sinistra su desktop).
+/* Layout: mappa a tutto schermo con pulsanti tondi a destra; l'elenco è una pagina a tutto schermo.
    Palette ispirata alla segnaletica stradale italiana: blu del cartello "P". */
 :root {
   --blu: #1b4f9c;
@@ -49,6 +49,7 @@ body {
   font: 15px/1.4 var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
+[hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 button { font: inherit; color: inherit; cursor: pointer; }
 :focus-visible { outline: 3px solid var(--blu); outline-offset: 2px; }
@@ -87,39 +88,49 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .fab-col {
   position: absolute; right: 16px; top: 16px; z-index: 900;
-  display: flex; flex-direction: column; gap: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
 }
 .fab {
-  width: 46px; height: 46px; border-radius: 50%; border: 0;
+  position: relative;
+  width: 48px; height: 48px; border-radius: 50%; border: 0;
   display: grid; place-items: center;
   background: var(--superficie); color: var(--blu); box-shadow: var(--ombra);
+}
+.fab-nero { background: #111418; color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.85), var(--ombra); }
+.fab-verde { width: 60px; height: 60px; background: var(--libero); color: var(--su-colore); margin-top: 6px; }
+.fab:disabled { opacity: .5; cursor: default; }
+.badge {
+  position: absolute; top: -4px; right: -4px;
+  min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+  background: var(--libero); color: #fff; border: 2px solid #111418;
+  font: 700 11px/16px var(--font-body); font-variant-numeric: tabular-nums; text-align: center;
 }
 .fab.gira svg { animation: gira 1s linear infinite; }
 @keyframes gira { to { transform: rotate(360deg); } }
 
-/* ---- Pannello ---- */
+/* ---- Pagina elenco (a tutto schermo) ---- */
 .pannello {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 950;
-  max-height: 46%;
-  display: flex; flex-direction: column; gap: 12px;
-  padding: 6px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  position: fixed; inset: 0; z-index: 1500;
+  display: flex; flex-direction: column;
   background: var(--superficie);
-  border-radius: 20px 20px 0 0; box-shadow: var(--ombra);
-  transition: max-height .25s ease;
-  overflow: hidden;
+  animation: entra .2s ease-out;
 }
-.pannello.aperto { max-height: 88%; }
-.maniglia { align-self: center; border: 0; background: none; padding: 6px 30px; }
-.maniglia span { display: block; width: 42px; height: 5px; border-radius: 3px; background: var(--bordo); }
-
-@media (min-width: 900px) {
-  .pannello {
-    top: 16px; left: 16px; bottom: 16px; right: auto;
-    width: 400px; max-height: none; border-radius: var(--r);
-    padding: 16px;
-  }
-  .pannello.aperto { max-height: none; }
-  .maniglia { display: none; }
+@keyframes entra { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.pannello-testa {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+  border-bottom: 1px solid var(--bordo);
+}
+.pannello-testa h2 { margin: 0; font: 700 24px/1.1 var(--font-display); }
+.chiudi {
+  width: 44px; height: 44px; border-radius: 50%; border: 0;
+  display: grid; place-items: center; background: var(--bg); color: var(--testo);
+}
+.pannello-corpo {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  width: 100%; max-width: 640px; margin-inline: auto;
 }
 
 .stato { font-size: 13px; color: var(--testo-2); min-height: 18px; }
@@ -136,15 +147,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .kpi-segn b { color: var(--libero); }
 .kpi-osm b { color: var(--blu); }
 
-.azioni { display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px; }
 .btn {
   height: 46px; border-radius: 12px; border: 0;
   font: 600 15px var(--font-body);
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 0 10px; text-align: center; line-height: 1.1;
 }
-.btn-libero { background: var(--libero); color: var(--su-colore); }
-.btn-libero .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--su-colore); box-shadow: 0 0 0 3px color-mix(in srgb, var(--su-colore) 35%, transparent); }
 .btn-occupato { background: var(--bg); color: var(--testo); border: 1px solid var(--bordo); }
 .btn:disabled { opacity: .5; cursor: default; }
 
@@ -156,7 +164,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--blu); border-color: var(--blu); color: var(--su-colore); }
 
 /* ---- Lista ---- */
-.lista { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; min-height: 0; }
+.lista { list-style: none; margin: 0; padding: 0; }
 .voce {
   display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center;
   padding: 10px 4px; border-bottom: 1px solid var(--bordo); cursor: pointer;
@@ -224,7 +232,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---- Toast ---- */
 .toast {
-  position: fixed; left: 50%; top: calc(70px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
   z-index: 2000; max-width: calc(100% - 32px);
   background: var(--testo); color: var(--bg);
   padding: 10px 16px; border-radius: 10px; font-weight: 500; box-shadow: var(--ombra);
@@ -232,5 +240,5 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
   .mk.segn.libero::after, .fab.gira svg { animation: none; }
-  .pannello { transition: none; }
+  .pannello { animation: none; }
 }
