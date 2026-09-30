@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PostoLibero</title>
+  <meta name="description" content="Posti auto e parcheggi liberi entro 1 km dalla tua posizione">
+  <meta name="theme-color" content="#1b4f9c">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand" aria-label="PostoLibero">
+        <span class="p-sign" aria-hidden="true">P</span>
+        <span class="brand-name">PostoLibero</span>
+      </div>
+      <form class="cerca" id="form-cerca" role="search">
+        <label for="cerca-indirizzo" class="sr-only">Cerca un indirizzo</label>
+        <input id="cerca-indirizzo" type="search" placeholder="Cerca un indirizzo…" autocomplete="off" enterkeyhint="search">
+      </form>
+      <label class="raggio">
+        <span class="sr-only">Raggio</span>
+        <select id="raggio">
+          <option value="500">500 m</option>
+          <option value="1000" selected>1 km</option>
+          <option value="2000">2 km</option>
+        </select>
+      </label>
+    </header>
+
+    <main class="corpo">
+      <div id="mappa" class="mappa" role="application" aria-label="Mappa dei parcheggi"></div>
+
+      <div class="fab-col">
+        <button class="fab" id="btn-centra" type="button" title="Torna alla mia posizione" aria-label="Torna alla mia posizione">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+        <button class="fab" id="btn-aggiorna" type="button" title="Aggiorna" aria-label="Aggiorna i dati">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <section class="pannello" id="pannello" aria-label="Posti vicini">
+        <button class="maniglia" id="maniglia" type="button" aria-label="Espandi o riduci l'elenco" aria-expanded="false"><span></span></button>
+
+        <div class="stato" id="stato" role="status" aria-live="polite">Cerco la tua posizione…</div>
+
+        <div class="sommario" id="sommario">
+          <div class="kpi kpi-reale"><b id="k-reale">–</b><span>liberi ora<br>in parcheggi</span></div>
+          <div class="kpi kpi-segn"><b id="k-segn">–</b><span>posti segnalati<br>liberi</span></div>
+          <div class="kpi kpi-osm"><b id="k-osm">–</b><span>aree di sosta<br>in zona</span></div>
+        </div>
+
+        <div class="azioni">
+          <button class="btn btn-libero" id="btn-libero" type="button">
+            <span class="dot" aria-hidden="true"></span>Posto libero qui
+          </button>
+          <button class="btn btn-occupato" id="btn-parcheggiato" type="button">Ho parcheggiato</button>
+        </div>
+
+        <div class="filtri" role="group" aria-label="Filtri">
+          <button class="chip" type="button" data-filtro="gratuito" aria-pressed="false">Gratuiti</button>
+          <button class="chip" type="button" data-filtro="disabili" aria-pressed="false">Disabili</button>
+          <button class="chip" type="button" data-filtro="coperto" aria-pressed="false">Coperti</button>
+          <button class="chip" type="button" data-filtro="strada" aria-pressed="false">Su strada</button>
+        </div>
+
+        <ol class="lista" id="lista"></ol>
+
+        <footer class="fonti">
+          Dati: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
+          <span id="fonti-extra"></span>.
+          Le aree di sosta OSM indicano dove si può parcheggiare, non se c'è posto in questo momento.
+        </footer>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="config.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/segnalazioni.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
