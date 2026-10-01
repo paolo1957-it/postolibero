@@ -6,16 +6,17 @@
 (function () {
   "use strict";
   const cfg = window.POSTOLIBERO_CONFIG || {};
-  const sb = cfg.supabase || {};
+  const sb = Object.assign({}, cfg.supabase);
+  if (sb.url) sb.url = sb.url.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
   const condiviso = !!(sb.url && sb.anonKey);
   const CHIAVE_LOCALE = "postolibero.segnalazioni";
 
   function headers() {
-    return {
-      apikey: sb.anonKey,
-      Authorization: "Bearer " + sb.anonKey,
-      "Content-Type": "application/json"
-    };
+    const h = { apikey: sb.anonKey, "Content-Type": "application/json" };
+    // Le vecchie chiavi "anon" sono JWT (iniziano con eyJ) e vanno anche in Authorization;
+    // le nuove chiavi "sb_publishable_..." vanno solo in apikey.
+    if (/^eyJ/.test(sb.anonKey)) h.Authorization = "Bearer " + sb.anonKey;
+    return h;
   }
 
   function leggiLocale() {

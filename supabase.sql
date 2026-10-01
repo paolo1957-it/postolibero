@@ -26,6 +26,9 @@ create policy "inserimento" on public.segnalazioni
   for insert to anon
   with check (created_at between now() - interval '1 minute' and now() + interval '1 minute');
 
+-- Permessi per l'app (solo lettura e inserimento)
+grant select, insert on public.segnalazioni to anon;
+
 -- Nessuna modifica o cancellazione dal client.
 
 -- Pulizia facoltativa: cancella le segnalazioni più vecchie di 1 giorno.
