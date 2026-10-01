@@ -95,16 +95,56 @@
     throw ultimoErrore || new Error("OpenStreetMap non raggiungibile");
   }
 
-  async function caricaOpenData(lat, lon, raggio) {
-    const fonti = (cfg.openData || []).filter((f) => f.attivo &&
+  function fontiVicine(lat, lon, statiche) {
+    return (cfg.openData || []).filter((f) => f.attivo &&
+      (f.type === "statico") === statiche &&
       (!f.centro || PL.distanza(lat, lon, f.centro[0], f.centro[1]) <= (f.entroKm || 20) * 1000));
+  }
+
+  // Scarica il primo URL che risponde (accetta una stringa o un elenco)
+  async function scaricaJson(url) {
+    let ultimo;
+    for (const u of [].concat(url)) {
+      try {
+        const r = await fetchConTimeout(u, {}, 15000);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return await r.json();
+      } catch (e) { ultimo = e; }
+    }
+    throw ultimo;
+  }
+
+  const fontiAttive = { reale: [], comunali: [] };
+  function aggiornaFonti() {
+    const parti = [];
+    const uniq = (a) => [...new Set(a)];
+    if (fontiAttive.reale.length) parti.push("tempo reale: " + uniq(fontiAttive.reale).join(", "));
+    if (fontiAttive.comunali.length) parti.push("parcheggi comunali: " + uniq(fontiAttive.comunali).join(", "));
+    $("fonti-extra").textContent = parti.length ? ", " + parti.join(", ") : "";
+  }
+
+  async function caricaOpenData(lat, lon, raggio) {
+    const fonti = fontiVicine(lat, lon, false);
+    const risultati = await Promise.allSettled(fonti.map(async (f) =>
+      PL.analizzaOpenData(await scaricaJson(f.url), f, lat, lon, raggio)));
+    fontiAttive.reale = fonti.filter((_, i) => risultati[i].status === "fulfilled").map((f) => f.nome);
+    aggiornaFonti();
+    return risultati.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  }
+
+  // I dati comunali statici si scaricano una volta sola per sessione
+  const cacheComunali = new Map();
+  async function caricaComunali(lat, lon, raggio) {
+    const fonti = fontiVicine(lat, lon, true);
     const risultati = await Promise.allSettled(fonti.map(async (f) => {
-      const r = await fetchConTimeout(f.url, {}, 15000);
-      if (!r.ok) throw new Error(f.nome + ": HTTP " + r.status);
-      return PL.analizzaOpenData(await r.json(), f, lat, lon, raggio);
+      const chiave = [].concat(f.url).join("|");
+      if (!cacheComunali.has(chiave)) cacheComunali.set(chiave, scaricaJson(f.url));
+      try {
+        return PL.analizzaStatico(await cacheComunali.get(chiave), f, lat, lon, raggio);
+      } catch (e) { cacheComunali.delete(chiave); throw e; }
     }));
-    const nomi = fonti.filter((_, i) => risultati[i].status === "fulfilled").map((f) => f.nome);
-    $("fonti-extra").textContent = nomi.length ? ", tempo reale: " + nomi.join(", ") : "";
+    fontiAttive.comunali = fonti.filter((_, i) => risultati[i].status === "fulfilled").map((f) => f.nome);
+    aggiornaFonti();
     return risultati.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
   }
 
@@ -127,12 +167,15 @@
     if (forza) cacheOsm.clear();
     messaggio("Cerco parcheggi entro " + PL.formattaDistanza(stato.raggio) + "…");
 
-    const [osm, reale] = await Promise.allSettled([
+    const [osm, reale, comunali] = await Promise.allSettled([
       caricaOsm(lat, lon, stato.raggio),
       caricaOpenData(lat, lon, stato.raggio),
+      caricaComunali(lat, lon, stato.raggio),
       caricaSegnalazioni()
     ]);
-    stato.osm = osm.status === "fulfilled" ? osm.value : [];
+    stato.osm = PL.unisciStatici(
+      osm.status === "fulfilled" ? osm.value : [],
+      comunali.status === "fulfilled" ? comunali.value : []);
     stato.reale = reale.status === "fulfilled" ? reale.value : [];
 
     stato.caricando = false;
@@ -172,6 +215,8 @@
       if (l.disabili) righe.push(l.disabili + " posti disabili");
       if (l.maxstay) righe.push("Sosta max: " + esc(l.maxstay));
       if (l.orari) righe.push("Orari: " + esc(l.orari));
+      if (l.note) righe.push(esc(l.note));
+      if (l.fonteNome) righe.push("Fonte: " + esc(l.fonteNome));
     }
     righe.push(PL.formattaDistanza(l.distanza) + " · " + PL.minutiA_piedi(l.distanza) + " min a piedi");
     return `<div class="pop"><h3>${esc(l.nome || l.via || l.tipo)}</h3>
@@ -448,6 +493,17 @@
     stato.reale = await caricaOpenData(stato.centro.lat, stato.centro.lon, stato.raggio).catch(() => stato.reale);
     render();
   }, 180000);
+
+  // Scritta "FASE di TEST" lungo la diagonale della mappa (da in alto a sinistra a in basso a destra)
+  function posizionaFiligrana() {
+    const f = $("filigrana"), w = f.clientWidth, h = f.clientHeight;
+    if (!w || !h) return;
+    const diag = Math.hypot(w, h);
+    f.style.setProperty("--fil-ang", (Math.atan2(h, w) * 180 / Math.PI).toFixed(1) + "deg");
+    f.style.setProperty("--fil-size", Math.round(diag / 10.5) + "px");
+  }
+  posizionaFiligrana();
+  window.addEventListener("resize", posizionaFiligrana);
 
   $("btn-libero").disabled = true;
   $("btn-parcheggiato").disabled = true;

@@ -85,6 +85,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* ---- Corpo ---- */
 .corpo { position: relative; flex: 1; min-height: 0; }
 .mappa { position: absolute; inset: 0; background: var(--bg); }
+.filigrana {
+  position: absolute; inset: 0; z-index: 850;
+  overflow: hidden; pointer-events: none; user-select: none;
+}
+.filigrana span {
+  font: 700 var(--fil-size, 64px)/1 var(--font-display);
+  letter-spacing: .08em; white-space: nowrap;
+  color: var(--pieno); opacity: .22;
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%) rotate(var(--fil-ang, 60deg));
+}
 
 .fab-col {
   position: absolute; right: 16px; top: 16px; z-index: 900;
