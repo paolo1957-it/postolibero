@@ -1,6 +1,6 @@
 # PostoLibero
 
-Web app per il telefono che mostra dove parcheggiare entro 1 km dalla tua posizione (raggio regolabile a 500 m o 2 km).
+Web app per il telefono che mostra dove parcheggiare entro 1 km dalla tua posizione (raggio regolabile a 200m ,500m o 2 km).
 
 ## Cosa mostra
 
