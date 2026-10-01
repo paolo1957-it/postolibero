@@ -29,6 +29,7 @@
       <label class="raggio">
         <span class="sr-only">Raggio</span>
         <select id="raggio">
+          <option value="200">200 m</option>
           <option value="500">500 m</option>
           <option value="1000" selected>1 km</option>
           <option value="2000">2 km</option>
@@ -50,8 +51,14 @@
         <button class="fab" id="btn-aggiorna" type="button" title="Aggiorna" aria-label="Aggiorna i dati">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+      </div>
+
+      <div class="fab-azioni">
         <button class="fab fab-verde" id="btn-libero" type="button" title="Segnala un posto libero qui" aria-label="Segnala un posto libero dove ti trovi">
           <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 6.5v7M8.5 10h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="fab fab-rosso" id="btn-parcheggiato" type="button" title="Ho parcheggiato qui" aria-label="Ho parcheggiato qui: segna il posto come occupato">
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M4 12.2h16v4.3H4z" fill="currentColor"/><path d="M6.5 16.5v2M17.5 16.5v2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="7.5" cy="14.3" r="1.1" fill="var(--rosso-icona)"/><circle cx="16.5" cy="14.3" r="1.1" fill="var(--rosso-icona)"/></svg>
         </button>
       </div>
     </main>
@@ -72,8 +79,6 @@
           <div class="kpi kpi-segn"><b id="k-segn">–</b><span>posti segnalati<br>liberi</span></div>
           <div class="kpi kpi-osm"><b id="k-osm">–</b><span>aree di sosta<br>in zona</span></div>
         </div>
-
-        <button class="btn btn-occupato" id="btn-parcheggiato" type="button">Ho parcheggiato qui</button>
 
         <div class="filtri" role="group" aria-label="Filtri">
           <button class="chip" type="button" data-filtro="gratuito" aria-pressed="false">Gratuiti</button>
