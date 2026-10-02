@@ -73,24 +73,64 @@
     finally { clearTimeout(t); }
   }
 
+  // Copia di riserva sul telefono: i parcheggi non cambiano spesso, quindi se tutti
+  // i server OpenStreetMap sono fuori uso mostriamo l'ultimo risultato salvato per la zona.
+  const CHIAVE_RISERVA = "postolibero.osm";
+  function leggiRiserva() {
+    try { return JSON.parse(localStorage.getItem(CHIAVE_RISERVA) || "[]"); } catch (e) { return []; }
+  }
+  function salvaRiserva(lat, lon, raggio, json) {
+    try {
+      const lista = leggiRiserva().filter((x) => PL.distanza(x.lat, x.lon, lat, lon) > 300);
+      lista.unshift({ lat, lon, raggio, t: Date.now(), json });
+      localStorage.setItem(CHIAVE_RISERVA, JSON.stringify(lista.slice(0, 8)));
+    } catch (e) { /* memoria piena o non disponibile: pazienza */ }
+  }
+  function cercaRiserva(lat, lon, raggio) {
+    return leggiRiserva().find((x) =>
+      PL.distanza(x.lat, x.lon, lat, lon) + raggio <= x.raggio + 300 &&
+      Date.now() - x.t < 14 * 86400000);
+  }
+
+  // Ordine dei server: prima quello che ha funzionato l'ultima volta
+  function serverInOrdine() {
+    let ultimo = null;
+    try { ultimo = localStorage.getItem("postolibero.overpass"); } catch (e) { /* ignora */ }
+    const lista = cfg.overpass.slice();
+    const i = lista.indexOf(ultimo);
+    if (i > 0) { lista.splice(i, 1); lista.unshift(ultimo); }
+    return lista;
+  }
+
   async function caricaOsm(lat, lon, raggio) {
     const chiave = `${lat.toFixed(3)},${lon.toFixed(3)},${raggio}`;
     const c = cacheOsm.get(chiave);
     if (c && Date.now() - c.t < 10 * 60000) return PL.analizzaOverpass(c.json, lat, lon, raggio);
     const query = PL.queryOverpass(lat, lon, raggio + 150);
     let ultimoErrore;
-    for (const url of cfg.overpass) {
+    for (const url of serverInOrdine()) {
       try {
         const r = await fetchConTimeout(url, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: "data=" + encodeURIComponent(query)
-        }, 30000);
+        }, 20000);
         if (!r.ok) throw new Error("HTTP " + r.status);
         const json = await r.json();
+        // Un server sovraccarico risponde "200 OK" ma con un errore in "remark" e nessun dato
+        if (!json || !Array.isArray(json.elements)) throw new Error("Risposta non valida");
+        if (json.remark && /error|timed out|out of memory|rate/i.test(json.remark)) throw new Error(json.remark);
         cacheOsm.set(chiave, { t: Date.now(), json });
+        salvaRiserva(lat, lon, raggio + 150, json);
+        try { localStorage.setItem("postolibero.overpass", url); } catch (e) { /* ignora */ }
+        stato.osmDaRiserva = null;
         return PL.analizzaOverpass(json, lat, lon, raggio);
-      } catch (e) { ultimoErrore = e; }
+      } catch (e) { ultimoErrore = e; console.warn("Overpass", url, e && e.message); }
+    }
+    const riserva = cercaRiserva(lat, lon, raggio);
+    if (riserva) {
+      stato.osmDaRiserva = riserva.t;
+      return PL.analizzaOverpass(riserva.json, lat, lon, raggio);
     }
     throw ultimoErrore || new Error("OpenStreetMap non raggiungibile");
   }
@@ -184,7 +224,10 @@
 
     const ora = new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
     if (osm.status === "rejected") {
-      messaggio("OpenStreetMap non risponde. Riprova tra poco con il tasto aggiorna.", true);
+      messaggio("I server di OpenStreetMap non rispondono. Riprova tra qualche minuto con il tasto aggiorna.", true);
+    } else if (stato.osmDaRiserva) {
+      const quando = new Date(stato.osmDaRiserva).toLocaleDateString("it-IT", { day: "numeric", month: "long" });
+      messaggio(`OpenStreetMap non risponde: mostro i parcheggi salvati il ${quando}.`, true);
     } else {
       const dove = stato.centro.daGps ? "dalla tua posizione" : "dal punto cercato";
       messaggio(`Entro ${PL.formattaDistanza(stato.raggio)} ${dove} · aggiornato alle ${ora}` +

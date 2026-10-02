@@ -10,10 +10,12 @@ window.POSTOLIBERO_CONFIG = {
   ricaricaDopoMetri: 200,
 
   // Server Overpass (OpenStreetMap). Se il primo non risponde si prova il successivo.
+  // L'app ricorda quello che ha funzionato l'ultima volta e lo prova per primo.
   overpass: [
+    "https://overpass.private.coffee/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-    "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+    "https://overpass.kumi.systems/api/interpreter"
   ],
 
   // Segnalazioni degli utenti (crowdsourcing).
