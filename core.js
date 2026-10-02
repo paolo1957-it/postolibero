@@ -32,6 +32,8 @@
 
   function queryOverpass(lat, lon, raggio) {
     const a = `(around:${Math.round(raggio)},${lat.toFixed(6)},${lon.toFixed(6)})`;
+    // Prima si prendono le strade della zona, poi si filtrano: molto più leggero per il server
+    // di una ricerca per chiave su tutta la mappa.
     return `[out:json][timeout:25];
 (
   nwr["amenity"="parking"]${a};
@@ -39,9 +41,10 @@
   node["amenity"="parking_entrance"]${a};
 );
 out tags center;
+way${a}["highway"]->.strade;
 (
-  way["highway"][~"^parking:(both|left|right)$"~"${VALORI_SOSTA_STRADA}"]${a};
-  way["highway"][~"^parking:lane:(both|left|right)$"~"${VALORI_SOSTA_VECCHI}"]${a};
+  way.strade[~"^parking:(both|left|right)$"~"${VALORI_SOSTA_STRADA}"];
+  way.strade[~"^parking:lane:(both|left|right)$"~"${VALORI_SOSTA_VECCHI}"];
 );
 out tags geom;`;
   }
@@ -256,6 +259,86 @@ out tags geom;`;
     return out.sort((a, b) => a.distanza - b.distanza);
   }
 
+  // ---------- Open data statici (parcheggi comunali senza posti in tempo reale) ----------
+
+  function primoValore(obj, nomi) {
+    const keys = Object.keys(obj);
+    for (const n of nomi) {
+      const k = keys.find((x) => x.toLowerCase() === n);
+      if (k !== undefined && obj[k] != null && obj[k] !== "" && obj[k] !== "-") return obj[k];
+    }
+    return null;
+  }
+
+  function titolo(s) {
+    if (!s) return s;
+    const t = String(s).trim();
+    return t === t.toUpperCase()
+      ? t.toLowerCase().replace(/(^|[\s'(-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase())
+          .replace(/\b([A-Za-z]+\d+|Fnm)\b/g, (m) => m.toUpperCase())
+      : t;
+  }
+
+  /**
+   * Legge un GeoJSON di parcheggi (es. Comune di Milano) e restituisce luoghi
+   * nello stesso formato di OpenStreetMap, con fonte "comune".
+   */
+  function analizzaStatico(json, fonte, lat, lon, raggio) {
+    const out = [];
+    const features = (json && json.features) || [];
+    features.forEach((f, i) => {
+      const g = f.geometry;
+      if (!g || g.type !== "Point" || !Array.isArray(g.coordinates)) return;
+      const pLon = +g.coordinates[0], pLat = +g.coordinates[1];
+      if (!Number.isFinite(pLat) || !Number.isFinite(pLon)) return;
+      const d = distanza(lat, lon, pLat, pLon);
+      if (d > raggio) return;
+      const p = f.properties || {};
+      const testoPosti = String(primoValore(p, ["n_posti", "posti", "capienza", "tab1"]) || "");
+      const capienza = intOrNull((testoPosti.match(/\d+/) || [])[0]);
+      const dis = testoPosti.match(/(\d+)\s*disabili/i);
+      const note = primoValore(p, ["info", "note"]);
+      out.push({
+        id: "com/" + fonte.nome + "/" + (p.id ?? i),
+        fonte: "comune", fonteNome: fonte.nome,
+        categoria: "parcheggio",
+        tipo: fonte.etichetta || "Parcheggio comunale",
+        nome: titolo(primoValore(p, ["nome", "name", "denominazione"])),
+        via: titolo(primoValore(p, ["indirizzo", "address"])),
+        lat: pLat, lon: pLon, distanza: d,
+        capienza, capienzaStimata: false,
+        tariffa: "sconosciuto",
+        disabili: dis ? +dis[1] : 0,
+        coperto: false,
+        note: note ? titolo(String(note).replace(/\s+/g, " ")) : null,
+        orari: null, maxstay: null, geom: null, tags: {}
+      });
+    });
+    return out;
+  }
+
+  /**
+   * Unisce i parcheggi comunali a quelli OSM: se c'è già un parcheggio OSM entro 80 m,
+   * lo arricchisce (nome, posti, fonte) invece di duplicarlo.
+   */
+  function unisciStatici(osm, statici) {
+    const lista = osm.map((l) => ({ ...l }));
+    for (const s of statici) {
+      const doppio = lista.find((l) => l.categoria === "parcheggio" &&
+        distanza(l.lat, l.lon, s.lat, s.lon) < 80);
+      if (doppio) {
+        if (!doppio.nome && s.nome) doppio.nome = s.nome;
+        if (doppio.capienza == null && s.capienza != null) doppio.capienza = s.capienza;
+        if (!doppio.disabili && s.disabili) doppio.disabili = s.disabili;
+        if (!doppio.note && s.note) doppio.note = s.note;
+        doppio.fonteNome = s.fonteNome;
+      } else {
+        lista.push(s);
+      }
+    }
+    return lista.sort((a, b) => a.distanza - b.distanza);
+  }
+
   function statoDisponibilita(liberi, totali) {
     if (liberi == null) return "ignoto";
     if (liberi <= 0) return "pieno";
@@ -298,7 +381,7 @@ out tags geom;`;
 
   const API = {
     distanza, formattaDistanza, minutiA_piedi, queryOverpass, analizzaOverpass,
-    analizzaOpenData, statoDisponibilita, filtraSegnalazioni, formattaEta, leggiPosizione
+    analizzaOpenData, analizzaStatico, unisciStatici, statoDisponibilita, filtraSegnalazioni, formattaEta, leggiPosizione
   };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   else root.PL = API;

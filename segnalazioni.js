@@ -19,6 +19,13 @@
     return h;
   }
 
+  // Annulla la richiesta dopo "ms" millisecondi, così l'app non resta mai bloccata
+  function scadenza(ms) {
+    const c = new AbortController();
+    setTimeout(() => c.abort(), ms);
+    return c.signal;
+  }
+
   function leggiLocale() {
     try { return JSON.parse(localStorage.getItem(CHIAVE_LOCALE) || "[]"); } catch (e) { return []; }
   }
@@ -48,7 +55,8 @@
     q.append("lon", "lte." + b.e.toFixed(6));
     q.append("order", "created_at.desc");
     q.append("limit", "300");
-    const r = await fetch(sb.url.replace(/\/$/, "") + "/rest/v1/segnalazioni?" + q, { headers: headers() });
+    const r = await fetch(sb.url + "/rest/v1/segnalazioni?" + q,
+      { headers: headers(), signal: scadenza(10000) });
     if (!r.ok) throw new Error("Segnalazioni non disponibili (" + r.status + ")");
     return r.json();
   }
@@ -61,8 +69,9 @@
       scriviLocale(lista);
       return s;
     }
-    const r = await fetch(sb.url.replace(/\/$/, "") + "/rest/v1/segnalazioni", {
+    const r = await fetch(sb.url + "/rest/v1/segnalazioni", {
       method: "POST",
+      signal: scadenza(10000),
       headers: { ...headers(), Prefer: "return=minimal" },
       body: JSON.stringify({ lat: s.lat, lon: s.lon, stato })
     });

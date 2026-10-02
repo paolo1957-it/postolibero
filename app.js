@@ -73,6 +73,23 @@
     finally { clearTimeout(t); }
   }
 
+  // Scarica e legge il JSON entro "ms" millisecondi in tutto (risposta + dati).
+  // "segnale" esterno opzionale per annullare la richiesta da fuori.
+  async function fetchJson(url, opts, ms, segnale) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    const annulla = () => ctrl.abort();
+    if (segnale) segnale.addEventListener("abort", annulla);
+    try {
+      const r = await fetch(url, { ...opts, signal: ctrl.signal });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } finally {
+      clearTimeout(t);
+      if (segnale) segnale.removeEventListener("abort", annulla);
+    }
+  }
+
   // Copia di riserva sul telefono: i parcheggi non cambiano spesso, quindi se tutti
   // i server OpenStreetMap sono fuori uso mostriamo l'ultimo risultato salvato per la zona.
   const CHIAVE_RISERVA = "postolibero.osm";
@@ -107,32 +124,39 @@
     const c = cacheOsm.get(chiave);
     if (c && Date.now() - c.t < 10 * 60000) return PL.analizzaOverpass(c.json, lat, lon, raggio);
     const query = PL.queryOverpass(lat, lon, raggio + 150);
-    let ultimoErrore;
-    for (const url of serverInOrdine()) {
-      try {
-        const r = await fetchConTimeout(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "data=" + encodeURIComponent(query)
-        }, 20000);
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        const json = await r.json();
-        // Un server sovraccarico risponde "200 OK" ma con un errore in "remark" e nessun dato
-        if (!json || !Array.isArray(json.elements)) throw new Error("Risposta non valida");
-        if (json.remark && /error|timed out|out of memory|rate/i.test(json.remark)) throw new Error(json.remark);
-        cacheOsm.set(chiave, { t: Date.now(), json });
-        salvaRiserva(lat, lon, raggio + 150, json);
-        try { localStorage.setItem("postolibero.overpass", url); } catch (e) { /* ignora */ }
-        stato.osmDaRiserva = null;
-        return PL.analizzaOverpass(json, lat, lon, raggio);
-      } catch (e) { ultimoErrore = e; console.warn("Overpass", url, e && e.message); }
+    const fine = new AbortController();
+
+    // Il server preferito parte subito, gli altri a distanza di 4 secondi se nessuno ha ancora risposto.
+    const tentativi = serverInOrdine().map((url, i) => (async () => {
+      if (i) await new Promise((ok) => setTimeout(ok, i * 4000));
+      if (fine.signal.aborted) throw new Error("annullato");
+      const json = await fetchJson(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "data=" + encodeURIComponent(query)
+      }, 25000, fine.signal);
+      // Un server sovraccarico risponde "200 OK" ma con un errore in "remark" e nessun dato
+      if (!json || !Array.isArray(json.elements)) throw new Error("Risposta non valida");
+      if (json.remark && /error|timed out|out of memory|rate/i.test(json.remark)) throw new Error(json.remark);
+      return { url, json };
+    })().catch((e) => { console.warn("Overpass", url, e && e.message); throw e; }));
+
+    try {
+      const { url, json } = await Promise.any(tentativi);
+      fine.abort(); // ferma le richieste ancora in corso
+      cacheOsm.set(chiave, { t: Date.now(), json });
+      salvaRiserva(lat, lon, raggio + 150, json);
+      try { localStorage.setItem("postolibero.overpass", url); } catch (e) { /* ignora */ }
+      stato.osmDaRiserva = null;
+      return PL.analizzaOverpass(json, lat, lon, raggio);
+    } catch (e) {
+      const riserva = cercaRiserva(lat, lon, raggio);
+      if (riserva) {
+        stato.osmDaRiserva = riserva.t;
+        return PL.analizzaOverpass(riserva.json, lat, lon, raggio);
+      }
+      throw new Error("OpenStreetMap non raggiungibile");
     }
-    const riserva = cercaRiserva(lat, lon, raggio);
-    if (riserva) {
-      stato.osmDaRiserva = riserva.t;
-      return PL.analizzaOverpass(riserva.json, lat, lon, raggio);
-    }
-    throw ultimoErrore || new Error("OpenStreetMap non raggiungibile");
   }
 
   function fontiVicine(lat, lon, statiche) {
@@ -146,9 +170,7 @@
     let ultimo;
     for (const u of [].concat(url)) {
       try {
-        const r = await fetchConTimeout(u, {}, 15000);
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return await r.json();
+        return await fetchJson(u, {}, 15000);
       } catch (e) { ultimo = e; }
     }
     throw ultimo;
@@ -199,28 +221,35 @@
     }
   }
 
+  let giroCarica = 0;
   async function carica(forza) {
-    if (!stato.centro || stato.caricando) return;
+    if (!stato.centro) return;
+    const giro = ++giroCarica; // se parte un nuovo caricamento, quello vecchio non aggiorna più la schermata
     stato.caricando = true;
     $("btn-aggiorna").classList.add("gira");
     const { lat, lon } = stato.centro;
     if (forza) cacheOsm.clear();
     messaggio("Cerco parcheggi entro " + PL.formattaDistanza(stato.raggio) + "…");
 
-    const [osm, reale, comunali] = await Promise.allSettled([
-      caricaOsm(lat, lon, stato.raggio),
-      caricaOpenData(lat, lon, stato.raggio),
-      caricaComunali(lat, lon, stato.raggio),
-      caricaSegnalazioni()
-    ]);
-    stato.osm = PL.unisciStatici(
-      osm.status === "fulfilled" ? osm.value : [],
-      comunali.status === "fulfilled" ? comunali.value : []);
-    stato.reale = reale.status === "fulfilled" ? reale.value : [];
+    let osmLista = null, comunaliLista = [];
+    const aggiornaOsm = () => {
+      if (giro !== giroCarica) return;
+      stato.osm = PL.unisciStatici(osmLista || [], comunaliLista);
+      render();
+    };
 
+    const pOsm = caricaOsm(lat, lon, stato.raggio).then((l) => { osmLista = l; aggiornaOsm(); });
+    const pCom = caricaComunali(lat, lon, stato.raggio).then((l) => { comunaliLista = l; aggiornaOsm(); });
+    const pReale = caricaOpenData(lat, lon, stato.raggio).then((l) => {
+      if (giro === giroCarica) { stato.reale = l; render(); }
+    });
+    const pSegn = caricaSegnalazioni().then(() => { if (giro === giroCarica) render(); });
+
+    const [osm] = await Promise.allSettled([pOsm, pCom, pReale, pSegn]);
+    if (giro !== giroCarica) return;
     stato.caricando = false;
     $("btn-aggiorna").classList.remove("gira");
-    render();
+    aggiornaOsm();
 
     const ora = new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
     if (osm.status === "rejected") {
@@ -462,8 +491,7 @@
     messaggio("Cerco “" + q + "”…");
     try {
       const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=it&q=" + encodeURIComponent(q);
-      const r = await fetchConTimeout(url, { headers: { Accept: "application/json" } }, 12000);
-      const [primo] = await r.json();
+      const [primo] = await fetchJson(url, { headers: { Accept: "application/json" } }, 12000);
       if (!primo) { messaggio("Indirizzo non trovato. Prova ad aggiungere la città.", true); return; }
       stato.seguiGps = false;
       $("cerca-indirizzo").blur();
