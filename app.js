@@ -97,16 +97,29 @@
     try { return JSON.parse(localStorage.getItem(CHIAVE_RISERVA) || "[]"); } catch (e) { return []; }
   }
   function salvaRiserva(lat, lon, raggio, json) {
-    try {
-      const lista = leggiRiserva().filter((x) => PL.distanza(x.lat, x.lon, lat, lon) > 300);
-      lista.unshift({ lat, lon, raggio, t: Date.now(), json });
-      localStorage.setItem(CHIAVE_RISERVA, JSON.stringify(lista.slice(0, 8)));
-    } catch (e) { /* memoria piena o non disponibile: pazienza */ }
+    let lista = leggiRiserva().filter((x) => PL.distanza(x.lat, x.lon, lat, lon) > 300);
+    lista.unshift({ lat, lon, raggio, t: Date.now(), json: { elements: json.elements } });
+    lista = lista.slice(0, 12);
+    // Se la memoria del telefono è piena, toglie le zone più vecchie finché ci sta
+    while (lista.length) {
+      try { localStorage.setItem(CHIAVE_RISERVA, JSON.stringify(lista)); return; }
+      catch (e) { lista.pop(); }
+    }
   }
+  // Unisce tutte le zone salvate vicine (anche se coprono solo in parte il raggio attuale)
   function cercaRiserva(lat, lon, raggio) {
-    return leggiRiserva().find((x) =>
-      PL.distanza(x.lat, x.lon, lat, lon) + raggio <= x.raggio + 300 &&
-      Date.now() - x.t < 14 * 86400000);
+    const zone = leggiRiserva().filter((x) =>
+      PL.distanza(x.lat, x.lon, lat, lon) < x.raggio + raggio &&
+      Date.now() - x.t < 30 * 86400000);
+    if (!zone.length) return null;
+    const visti = new Set(), elementi = [];
+    for (const z of zone) {
+      for (const el of z.json.elements || []) {
+        const id = el.type + el.id;
+        if (!visti.has(id)) { visti.add(id); elementi.push(el); }
+      }
+    }
+    return { t: Math.min(...zone.map((z) => z.t)), json: { elements: elementi } };
   }
 
   // Ordine dei server: prima quello che ha funzionato l'ultima volta
@@ -126,10 +139,10 @@
     const query = PL.queryOverpass(lat, lon, raggio + 150);
     const fine = new AbortController();
 
-    // Il server preferito parte subito, gli altri a distanza di 4 secondi se nessuno ha ancora risposto.
-    const tentativi = serverInOrdine().map((url, i) => (async () => {
-      if (i) await new Promise((ok) => setTimeout(ok, i * 4000));
-      if (fine.signal.aborted) throw new Error("annullato");
+    // Il server preferito parte subito. Il successivo parte dopo 4 secondi, oppure subito
+    // se uno dei server già avviati risponde con un errore. Vince la prima risposta valida.
+    const lista = serverInOrdine();
+    const prova = async (url) => {
       const json = await fetchJson(url, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -139,11 +152,33 @@
       if (!json || !Array.isArray(json.elements)) throw new Error("Risposta non valida");
       if (json.remark && /error|timed out|out of memory|rate/i.test(json.remark)) throw new Error(json.remark);
       return { url, json };
-    })().catch((e) => { console.warn("Overpass", url, e && e.message); throw e; }));
+    };
+    const risultato = new Promise((ok, ko) => {
+      let prossimo = 0, inCorso = 0, timer, finito = false;
+      const avvia = () => {
+        clearTimeout(timer);
+        if (finito || prossimo >= lista.length) return;
+        const url = lista[prossimo++];
+        inCorso++;
+        prova(url).then((r) => {
+          if (finito) return;
+          finito = true; clearTimeout(timer);
+          fine.abort(); // ferma le richieste ancora in corso
+          ok(r);
+        }, (e) => {
+          inCorso--;
+          if (finito) return;
+          console.warn("Overpass", url, e && e.message);
+          if (prossimo < lista.length) avvia();
+          else if (inCorso === 0) { finito = true; ko(e); }
+        });
+        if (prossimo < lista.length) timer = setTimeout(avvia, 4000);
+      };
+      avvia();
+    });
 
     try {
-      const { url, json } = await Promise.any(tentativi);
-      fine.abort(); // ferma le richieste ancora in corso
+      const { url, json } = await risultato;
       cacheOsm.set(chiave, { t: Date.now(), json });
       salvaRiserva(lat, lon, raggio + 150, json);
       try { localStorage.setItem("postolibero.overpass", url); } catch (e) { /* ignora */ }
@@ -252,11 +287,23 @@
     aggiornaOsm();
 
     const ora = new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+    clearTimeout(stato.timerRiprova);
+    if (osm.status === "rejected" || stato.osmDaRiserva) {
+      // Riprova da sola: dopo 30 s, poi 1 min, poi 2 min, poi ogni 5 min
+      const attese = [30, 60, 120, 300];
+      const sec = attese[Math.min(stato.tentativiOsm || 0, attese.length - 1)];
+      stato.tentativiOsm = (stato.tentativiOsm || 0) + 1;
+      stato.timerRiprova = setTimeout(() => carica(true), sec * 1000);
+    } else {
+      stato.tentativiOsm = 0;
+    }
+    const riprovo = (s) => s >= 60 ? `tra ${s / 60} min` : `tra ${s} secondi`;
+    const prossima = [30, 60, 120, 300][Math.min((stato.tentativiOsm || 1) - 1, 3)];
     if (osm.status === "rejected") {
-      messaggio("I server di OpenStreetMap non rispondono. Riprova tra qualche minuto con il tasto aggiorna.", true);
+      messaggio(`I server di OpenStreetMap sono sovraccarichi. Riprovo da solo ${riprovo(prossima)}.`, true);
     } else if (stato.osmDaRiserva) {
       const quando = new Date(stato.osmDaRiserva).toLocaleDateString("it-IT", { day: "numeric", month: "long" });
-      messaggio(`OpenStreetMap non risponde: mostro i parcheggi salvati il ${quando}.`, true);
+      messaggio(`OpenStreetMap non risponde: mostro i parcheggi salvati il ${quando}. Riprovo ${riprovo(prossima)}.`, true);
     } else {
       const dove = stato.centro.daGps ? "dalla tua posizione" : "dal punto cercato";
       messaggio(`Entro ${PL.formattaDistanza(stato.raggio)} ${dove} · aggiornato alle ${ora}` +
