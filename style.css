@@ -150,6 +150,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .stato { font-size: 13px; color: var(--testo-2); min-height: 18px; }
+.auto {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; border-radius: 10px; background: var(--bg);
+}
+.auto span { font: 700 15px/1 var(--font-display); letter-spacing: .06em; }
+.auto select {
+  height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--bordo);
+  background: var(--superficie); color: var(--testo); font: 600 15px var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.segn-box { display: flex; align-items: center; gap: 4px; }
+.segn-box .mk.segn { position: relative; flex: none; }
+.segn-eta {
+  font: 700 12px/1 var(--font-body); font-variant-numeric: tabular-nums; white-space: nowrap;
+  padding: 3px 6px; border-radius: 9px;
+  background: var(--superficie); color: var(--libero); box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
 .stato.errore { color: var(--pieno); font-weight: 600; }
 
 .sommario { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }

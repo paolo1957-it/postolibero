@@ -39,7 +39,7 @@
 
     <main class="corpo">
       <div id="mappa" class="mappa" role="application" aria-label="Mappa dei parcheggi"></div>
-      <div class="filigrana" id="filigrana" aria-hidden="true"><span>FASE di TEST</span></div>
+      <div class="filigrana" id="filigrana" aria-hidden="true"><span id="filigrana-testo">Versione</span></div>
 
       <div class="fab-col">
         <button class="fab" id="btn-centra" type="button" title="Torna alla mia posizione" aria-label="Torna alla mia posizione">
@@ -74,6 +74,16 @@
 
       <div class="pannello-corpo">
         <div class="stato" id="stato" role="status" aria-live="polite">Cerco la tua posizione…</div>
+
+        <label class="auto" for="auto-refresh">
+          <span>AUTO-REFRESH</span>
+          <select id="auto-refresh">
+            <option value="0">0 · spento</option>
+            <option value="30">30 s</option>
+            <option value="60">60 s</option>
+            <option value="120" selected>120 s</option>
+          </select>
+        </label>
 
         <div class="sommario" id="sommario">
           <div class="kpi kpi-reale"><b id="k-reale">–</b><span>liberi ora<br>in parcheggi</span></div>

@@ -3,6 +3,9 @@
  * Modifica questo file per attivare le segnalazioni condivise e le fonti open data.
  */
 window.POSTOLIBERO_CONFIG = {
+  // Versione dell'app, mostrata in diagonale sulla mappa. Aumentala a ogni aggiornamento.
+  versione: "12",
+
   // Raggio di ricerca iniziale in metri (modificabile anche dall'app)
   raggioMetri: 1000,
 
@@ -28,7 +31,10 @@ window.POSTOLIBERO_CONFIG = {
   },
 
   // Dopo quanti minuti una segnalazione non viene più mostrata
-  durataSegnalazioneMinuti: 20,
+  durataSegnalazioneMinuti: 120,
+
+  // Auto-refresh predefinito in secondi (0 = spento). Si cambia anche dalla pagina elenco.
+  autoRefreshSecondi: 120,
 
   // Fonti open data con posti liberi in tempo reale.
   // type "opendatasoft": portali Opendatasoft (usati da molti comuni).

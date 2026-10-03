@@ -389,8 +389,13 @@
     }
     // Segnalazioni
     for (const s of segnVisibili) {
+      // Accanto al pallino verde: da quanti minuti è stato segnalato
+      const etichetta = s.stato === "libero"
+        ? `<span class="segn-eta">${s.eta < 1 ? "ora" : s.eta + " min"}</span>` : "";
       const m = L.marker([s.lat, s.lon], {
-        icon: icona("segn " + s.stato), opacity: s.freschezza, zIndexOffset: 800
+        icon: L.divIcon({ className: "", iconSize: null,
+          html: `<div class="segn-box"><div class="mk segn ${s.stato}"></div>${etichetta}</div>` }),
+        opacity: s.freschezza, zIndexOffset: 800
       }).bindPopup(`<div class="pop"><h3>${s.stato === "libero" ? "Posto segnalato libero" : "Posto appena occupato"}</h3>
           <p>${PL.formattaEta(s.eta)} · ${PL.formattaDistanza(s.distanza)}</p>
           ${s.stato === "libero" ? `<p><a href="${linkNavigazione(s.lat, s.lon)}" target="_blank" rel="noopener">Portami qui →</a></p>` : ""}</div>`)
@@ -604,6 +609,35 @@
   $("btn-chiudi").addEventListener("click", chiudiElenco);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") chiudiElenco(); });
 
+  // ---------- Auto-refresh ----------
+  // Ogni N secondi fa come premere "posizione" e poi "aggiorna".
+  // I parcheggi di OpenStreetMap vengono riscaricati solo se ti sei spostato o dopo 10 minuti,
+  // per non sovraccaricare i server pubblici; segnalazioni e posti in tempo reale ogni volta.
+  let timerAuto;
+  function autoAggiorna() {
+    if (document.hidden || !stato.gps) return;
+    stato.seguiGps = true;
+    stato.centro = { lat: stato.gps.lat, lon: stato.gps.lon, daGps: true };
+    mappa.setView([stato.gps.lat, stato.gps.lon], 16);
+    carica(false);
+  }
+  function impostaAuto(sec) {
+    clearInterval(timerAuto);
+    if (sec > 0) timerAuto = setInterval(autoAggiorna, sec * 1000);
+    try { localStorage.setItem("postolibero.auto", String(sec)); } catch (e) { /* ignora */ }
+  }
+  let secAuto = cfg.autoRefreshSecondi ?? 120;
+  try {
+    const salvato = localStorage.getItem("postolibero.auto");
+    if (salvato !== null && ["0", "30", "60", "120"].includes(salvato)) secAuto = +salvato;
+  } catch (e) { /* ignora */ }
+  $("auto-refresh").value = String(secAuto);
+  impostaAuto(secAuto);
+  $("auto-refresh").addEventListener("change", (e) => {
+    impostaAuto(+e.target.value);
+    toast(+e.target.value ? `Auto-refresh ogni ${e.target.value} secondi` : "Auto-refresh disattivato");
+  });
+
   // Aggiornamenti periodici: segnalazioni ogni minuto, tutto ogni 3 minuti
   setInterval(async () => { await caricaSegnalazioni(); render(); }, 60000);
   setInterval(async () => {
@@ -612,7 +646,8 @@
     render();
   }, 180000);
 
-  // Scritta "FASE di TEST" lungo la diagonale della mappa (da in alto a sinistra a in basso a destra)
+  // Numero di versione lungo la diagonale della mappa (da in alto a sinistra a in basso a destra)
+  $("filigrana-testo").textContent = "Versione " + (cfg.versione || "");
   function posizionaFiligrana() {
     const f = $("filigrana"), w = f.clientWidth, h = f.clientHeight;
     if (!w || !h) return;
