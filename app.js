@@ -245,12 +245,65 @@
     return risultati.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
   }
 
+  // ---------- Suoni ----------
+  // Suoni sintetizzati (nessun file da scaricare). Su iPhone il browser li permette solo
+  // dopo il primo tocco sullo schermo, quindi l'audio si "sblocca" al primo tocco.
+  let audio = null;
+  let suoniAttivi = true;
+  try { suoniAttivi = localStorage.getItem("postolibero.suoni") !== "0"; } catch (e) { /* ignora */ }
+  function sbloccaAudio() {
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state !== "running") audio.resume();
+    } catch (e) { /* audio non disponibile */ }
+  }
+  document.addEventListener("pointerdown", sbloccaAudio, { passive: true });
+  document.addEventListener("touchend", sbloccaAudio, { passive: true });
+
+  // note: elenco di [frequenza Hz, inizio s, durata s]
+  function suona(note, volume) {
+    if (!suoniAttivi || !audio || document.hidden) return;
+    if (audio.state !== "running") { audio.resume().catch(() => {}); if (audio.state !== "running") return; }
+    const t0 = audio.currentTime + 0.02;
+    for (const [freq, inizio, durata] of note) {
+      const osc = audio.createOscillator(), g = audio.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0 + inizio);
+      g.gain.exponentialRampToValueAtTime(volume || 0.35, t0 + inizio + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + inizio + durata);
+      osc.connect(g).connect(audio.destination);
+      osc.start(t0 + inizio);
+      osc.stop(t0 + inizio + durata + 0.05);
+    }
+  }
+  const SUONO = {
+    aggiornato: () => suona([[1318.5, 0, 0.6], [2637, 0, 0.25]], 0.3),          // "bing"
+    errore: () => suona([[392, 0, 0.25], [311, 0.22, 0.45]], 0.3),             // due note che scendono
+    nuovoPosto: () => suona([[784, 0, 0.18], [1046.5, 0.15, 0.18], [1568, 0.3, 0.5]], 0.32) // tre note che salgono
+  };
+
   async function caricaSegnalazioni() {
     if (!stato.centro) return;
     const { lat, lon } = stato.centro;
     try {
       const lista = await Segnalazioni.carica(lat, lon, stato.raggio, cfg.durataSegnalazioneMinuti);
       stato.segn = PL.filtraSegnalazioni(lista, lat, lon, stato.raggio, cfg.durataSegnalazioneMinuti);
+      // Suono quando compare un posto libero nuovo segnalato da qualcun altro
+      const visti = stato.segnViste || (stato.segnViste = new Set());
+      const primaVolta = !stato.segnCaricate;
+      let nuovo = false;
+      for (const x of stato.segn) {
+        const id = String(x.id);
+        if (visti.has(id)) continue;
+        visti.add(id);
+        const mia = stato.miaSegnalazione &&
+          PL.distanza(x.lat, x.lon, stato.miaSegnalazione.lat, stato.miaSegnalazione.lon) < 20 &&
+          Math.abs(x.ts - stato.miaSegnalazione.t) < 120000;
+        if (!primaVolta && x.stato === "libero" && !mia) nuovo = true;
+      }
+      stato.segnCaricate = true;
+      if (nuovo) { SUONO.nuovoPosto(); stato.suonoNuovo = Date.now(); }
     } catch (e) {
       console.warn(e);
     }
@@ -296,6 +349,10 @@
       stato.timerRiprova = setTimeout(() => carica(true), sec * 1000);
     } else {
       stato.tentativiOsm = 0;
+    }
+    // Suono di fine aggiornamento (non se è appena suonato quello del nuovo posto libero)
+    if (Date.now() - (stato.suonoNuovo || 0) > 3000) {
+      (osm.status === "rejected" || stato.osmDaRiserva) ? SUONO.errore() : SUONO.aggiornato();
     }
     const riprovo = (s) => s >= 60 ? `tra ${s / 60} min` : `tra ${s} secondi`;
     const prossima = [30, 60, 120, 300][Math.min((stato.tentativiOsm || 1) - 1, 3)];
@@ -559,6 +616,7 @@
     if (stato.gps.acc > 60) { toast("Posizione poco precisa (±" + Math.round(stato.gps.acc) + " m). Riprova all'aperto."); return; }
     if (Date.now() - stato.ultimaSegnalazione < 30000) { toast("Hai appena segnalato. Attendi qualche secondo."); return; }
     try {
+      stato.miaSegnalazione = { lat: stato.gps.lat, lon: stato.gps.lon, t: Date.now() };
       await Segnalazioni.invia(stato.gps.lat, stato.gps.lon, tipo);
       stato.ultimaSegnalazione = Date.now();
       toast(tipo === "libero" ? "Grazie! Posto libero segnalato." : "Segnato come occupato. Buona sosta!");
@@ -633,6 +691,13 @@
   } catch (e) { /* ignora */ }
   $("auto-refresh").value = String(secAuto);
   impostaAuto(secAuto);
+  $("suoni").value = suoniAttivi ? "1" : "0";
+  $("suoni").addEventListener("change", (e) => {
+    suoniAttivi = e.target.value === "1";
+    try { localStorage.setItem("postolibero.suoni", suoniAttivi ? "1" : "0"); } catch (err) { /* ignora */ }
+    sbloccaAudio();
+    if (suoniAttivi) setTimeout(SUONO.aggiornato, 150); // prova
+  });
   $("auto-refresh").addEventListener("change", (e) => {
     impostaAuto(+e.target.value);
     toast(+e.target.value ? `Auto-refresh ogni ${e.target.value} secondi` : "Auto-refresh disattivato");
