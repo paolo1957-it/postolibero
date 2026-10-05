@@ -7,6 +7,7 @@
   --attenzione: #b87900;
   --pieno: #c23a2f;
   --osm: #5a6a86;
+  --grigio: #7a8291;
   --bg: #f3f5f9;
   --superficie: #ffffff;
   --testo: #172033;
@@ -28,6 +29,7 @@
     --attenzione: #e3a82d;
     --pieno: #ec6a5f;
     --osm: #93a2bf;
+    --grigio: #8e97a6;
     --bg: #0f1522;
     --superficie: #182132;
     --testo: #e8edf6;
@@ -212,7 +214,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .icona.libero { background: var(--libero); }
 .icona.quasi-pieno { background: var(--attenzione); }
 .icona.pieno { background: var(--pieno); }
-.icona.parcheggio { background: var(--blu); }
+.icona.parcheggio, .icona.blu { background: var(--blu); }
+.icona.grigio { background: var(--grigio); }
+.icona.verde { background: var(--libero); }
 .icona.segnalato { background: var(--libero); border-radius: 50%; }
 .icona .num { font-size: 17px; font-variant-numeric: tabular-nums; }
 .voce-testo { min-width: 0; }
@@ -239,12 +243,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: var(--blu); border: 2px solid #fff;
   box-shadow: 0 2px 6px rgba(0,0,0,.3);
 }
-.mk.reale { width: auto; min-width: 34px; padding: 0 6px; border-radius: 17px; font-variant-numeric: tabular-nums; }
+.mk.reale { width: auto; min-width: 30px; padding: 0 5px; font-variant-numeric: tabular-nums; }
+.mk.blu { background: var(--blu); }
+.mk.grigio { background: var(--grigio); }
+.mk.verde { background: var(--libero); }
 .mk.libero { background: var(--libero); }
 .mk.quasi-pieno { background: var(--attenzione); }
 .mk.pieno { background: var(--pieno); }
-.mk.stallo { width: 14px; height: 14px; border-radius: 3px; border-width: 1.5px; font-size: 0; background: var(--osm); }
-.mk.stallo.disabili { background: var(--blu); }
+.mk.stallo { width: 14px; height: 14px; border-radius: 3px; border-width: 1.5px; font-size: 0; }
 .mk.segn { width: 22px; height: 22px; border-radius: 50%; font-size: 0; background: var(--libero); }
 .mk.segn.occupato { background: var(--pieno); }
 .mk.segn.libero::after {
@@ -257,11 +263,20 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: #2f7cf6; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(47,124,246,.25);
 }
 
-.leaflet-popup-content { font: 14px/1.4 var(--font-body); margin: 12px 14px; }
+.leaflet-popup-content { font: 20px/1.35 var(--font-body); margin: 16px 18px; }
+.leaflet-container a.leaflet-popup-close-button {
+  width: 44px; height: 44px; font: 400 34px/42px var(--font-body); color: var(--testo-2);
+}
+.leaflet-popup-content-wrapper { border-radius: 16px; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--superficie); color: var(--testo); }
-.pop h3 { margin: 0 0 4px; font: 700 17px/1.2 var(--font-display); }
-.pop p { margin: 2px 0; color: var(--testo-2); }
+.pop h3 { margin: 0 40px 6px 0; font: 700 26px/1.15 var(--font-display); color: var(--testo); }
+.pop p { margin: 4px 0; color: var(--testo-2); }
 .pop a { color: var(--blu); font-weight: 600; }
+.pop .pop-vai {
+  display: block; margin-top: 14px; padding: 14px 16px; border-radius: 12px;
+  background: var(--blu); color: var(--su-colore); text-align: center; text-decoration: none;
+  font: 700 20px/1.1 var(--font-body);
+}
 
 /* ---- Toast ---- */
 .toast {

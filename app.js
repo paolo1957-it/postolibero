@@ -42,7 +42,7 @@
   mappa.on("zoomend", aggiornaVisibilitaStalli);
   mappa.on("dragstart", () => { stato.seguiGps = false; });
 
-  const icona = (cls, html) => L.divIcon({ className: "", html: `<div class="mk ${cls}">${html || ""}</div>`, iconSize: null });
+  const icona = (cls, html) => L.divIcon({ className: "", html: `<div class="mk ${cls}">${html ?? ""}</div>`, iconSize: null });
 
   // ---------- Utilità UI ----------
   function messaggio(testo, errore) {
@@ -378,26 +378,54 @@
     return true;
   }
 
+  // Colore del segnaposto: verde = posti liberi ora, blu = meno di 4 posti,
+  // grigio = 4 posti o più (o numero di posti non indicato), rosso = pieno
+  function coloreLuogo(l) {
+    if (l.fonte === "opendata") return l.liberi > 0 ? "verde" : "pieno";
+    if (l.capienza != null && l.capienza < 4) return "blu";
+    return "grigio";
+  }
+
+  // Testi per la lettura vocale
+  function distanzaParlata(m) {
+    if (m < 1000) return Math.round(m / 10) * 10 + " metri";
+    return (m / 1000).toFixed(1).replace(".", ",") + " chilometri";
+  }
+  function minutiParlati(m) {
+    const n = PL.minutiA_piedi(m);
+    return n === 1 ? "1 minuto a piedi" : n + " minuti a piedi";
+  }
+  const attr = (t) => String(t).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  const OPZ_POPUP = { maxWidth: 360, minWidth: 260, autoPanPadding: [16, 90] };
+
   function popupLuogo(l) {
-    const righe = [];
+    const righe = [], voce = [];
+    const titolo = l.nome || l.via || l.tipo;
+    voce.push(titolo + ".");
+    if (l.tipo && l.tipo !== titolo) voce.push(l.tipo + ".");
     if (l.fonte === "opendata") {
       righe.push(`<b style="color:var(--libero)">${l.liberi} posti liberi</b>${l.capienza ? " su " + l.capienza : ""}`);
+      voce.push(l.liberi > 0 ? `${l.liberi} posti liberi${l.capienza ? " su " + l.capienza : ""}.` : "Pieno.");
       if (l.aggiornato) righe.push("Dato del " + esc(new Date(l.aggiornato).toLocaleString("it-IT")));
       righe.push("Fonte: " + esc(l.fonteNome));
     } else {
-      if (l.capienza) righe.push((l.capienzaStimata ? "circa " : "") + l.capienza + " posti");
-      if (l.tariffa === "gratuito") righe.push("Gratuito");
-      else if (l.tariffa === "pagamento") righe.push("A pagamento");
-      if (l.disabili) righe.push(l.disabili + " posti disabili");
+      if (l.capienza) {
+        righe.push((l.capienzaStimata ? "circa " : "") + l.capienza + " posti");
+        voce.push((l.capienzaStimata ? "Circa " : "") + l.capienza + (l.capienza === 1 ? " posto." : " posti."));
+      }
+      if (l.tariffa === "gratuito") { righe.push("Gratuito"); voce.push("Gratuito."); }
+      else if (l.tariffa === "pagamento") { righe.push("A pagamento"); voce.push("A pagamento."); }
+      if (l.disabili) { righe.push(l.disabili + " posti disabili"); voce.push(l.disabili + " posti per disabili."); }
       if (l.maxstay) righe.push("Sosta max: " + esc(l.maxstay));
       if (l.orari) righe.push("Orari: " + esc(l.orari));
       if (l.note) righe.push(esc(l.note));
       if (l.fonteNome) righe.push("Fonte: " + esc(l.fonteNome));
     }
     righe.push(PL.formattaDistanza(l.distanza) + " · " + PL.minutiA_piedi(l.distanza) + " min a piedi");
-    return `<div class="pop"><h3>${esc(l.nome || l.via || l.tipo)}</h3>
+    voce.push(distanzaParlata(l.distanza) + ", " + minutiParlati(l.distanza) + ".");
+    return `<div class="pop" data-voce="${attr(voce.join(" "))}"><h3>${esc(titolo)}</h3>
       <p>${esc(l.tipo)}</p>${righe.map((r) => "<p>" + r + "</p>").join("")}
-      <p><a href="${linkNavigazione(l.lat, l.lon)}" target="_blank" rel="noopener">Portami qui →</a></p></div>`;
+      <a class="pop-vai" href="${linkNavigazione(l.lat, l.lon)}" target="_blank" rel="noopener">Portami qui</a></div>`;
   }
 
   function render() {
@@ -421,27 +449,27 @@
     // Strade con sosta
     for (const l of osm.filter((x) => x.categoria === "strada")) {
       const linea = L.polyline(l.geom.map((p) => [p.lat, p.lon]), { color: "#1b4f9c", weight: 6, opacity: .55 })
-        .bindPopup(popupLuogo(l)).addTo(livelli.strade);
+        .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.strade);
       markerPerId.set(l.id, linea);
     }
     // Stalli singoli (visibili da zoom 17)
     for (const l of osm.filter((x) => x.categoria === "stallo")) {
-      const m = L.marker([l.lat, l.lon], { icon: icona("stallo" + (l.disabili ? " disabili" : "")) })
-        .bindPopup(popupLuogo(l)).addTo(livelli.stalli);
+      const m = L.marker([l.lat, l.lon], { icon: icona("stallo " + coloreLuogo(l)) })
+        .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.stalli);
       markerPerId.set(l.id, m);
     }
     aggiornaVisibilitaStalli();
     // Parcheggi
     for (const l of osm.filter((x) => x.categoria === "parcheggio")) {
-      const m = L.marker([l.lat, l.lon], { icon: icona("", "P"), title: l.nome || l.tipo })
-        .bindPopup(popupLuogo(l)).addTo(livelli.luoghi);
+      const m = L.marker([l.lat, l.lon], { icon: icona(coloreLuogo(l), "P"), title: l.nome || l.tipo })
+        .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.luoghi);
       markerPerId.set(l.id, m);
     }
     // Tempo reale
     for (const l of reale) {
       const s = PL.statoDisponibilita(l.liberi, l.capienza);
-      const m = L.marker([l.lat, l.lon], { icon: icona("reale " + s, l.liberi), zIndexOffset: 500, title: l.nome })
-        .bindPopup(popupLuogo(l)).addTo(livelli.luoghi);
+      const m = L.marker([l.lat, l.lon], { icon: icona("reale " + coloreLuogo(l), l.liberi), zIndexOffset: 500, title: l.nome })
+        .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.luoghi);
       markerPerId.set(l.id, m);
     }
     // Segnalazioni
@@ -453,9 +481,11 @@
         icon: L.divIcon({ className: "", iconSize: null,
           html: `<div class="segn-box"><div class="mk segn ${s.stato}"></div>${etichetta}</div>` }),
         opacity: s.freschezza, zIndexOffset: 800
-      }).bindPopup(`<div class="pop"><h3>${s.stato === "libero" ? "Posto segnalato libero" : "Posto appena occupato"}</h3>
+      }).bindPopup(`<div class="pop" data-voce="${attr((s.stato === "libero" ? "Posto segnalato libero, " : "Posto appena occupato, ") +
+            (s.eta < 1 ? "adesso" : s.eta === 1 ? "1 minuto fa" : s.eta + " minuti fa") + ". " + distanzaParlata(s.distanza) + ".")}">
+          <h3>${s.stato === "libero" ? "Posto segnalato libero" : "Posto appena occupato"}</h3>
           <p>${PL.formattaEta(s.eta)} · ${PL.formattaDistanza(s.distanza)}</p>
-          ${s.stato === "libero" ? `<p><a href="${linkNavigazione(s.lat, s.lon)}" target="_blank" rel="noopener">Portami qui →</a></p>` : ""}</div>`)
+          ${s.stato === "libero" ? `<a class="pop-vai" href="${linkNavigazione(s.lat, s.lon)}" target="_blank" rel="noopener">Portami qui</a>` : ""}</div>`, OPZ_POPUP)
         .addTo(livelli.segn);
       markerPerId.set("segn/" + s.id, m);
     }
@@ -509,9 +539,9 @@
     for (const l of reale) {
       const st = PL.statoDisponibilita(l.liberi, l.capienza);
       voci.push({ p: st === "pieno" ? 2 : 0, d: l.distanza, el: voce(l, {
-        id: l.id, classe: st, icona: `<span class="num">${l.liberi}</span>`,
+        id: l.id, classe: coloreLuogo(l), icona: `<span class="num">${l.liberi}</span>`,
         titolo: l.nome,
-        meta: [`<span class="tag ${st === "libero" ? "reale" : st}">${st === "pieno" ? "Pieno" : l.liberi + " liberi ora"}</span>`,
+        meta: [`<span class="tag ${st === "pieno" ? "pieno" : "reale"}">${st === "pieno" ? "Pieno" : l.liberi + " liberi ora"}</span>`,
           l.capienza ? `<span>${l.capienza} posti</span>` : ""]
       }) });
     }
@@ -525,7 +555,7 @@
       else if (l.tariffa === "pagamento") meta.push("<span>A pagamento</span>");
       if (l.disabili) meta.push(`<span>♿ ${l.disabili}</span>`);
       voci.push({ p: 1, d: l.distanza, el: voce(l, {
-        id: l.id, classe: l.categoria === "parcheggio" ? "parcheggio" : "",
+        id: l.id, classe: coloreLuogo(l),
         icona: "P", titolo: l.nome || l.via || (l.categoria === "strada" ? "Sosta su strada" : l.tipo), meta
       }) });
     }
@@ -666,6 +696,40 @@
   $("btn-elenco").addEventListener("click", apriElenco);
   $("btn-chiudi").addEventListener("click", chiudiElenco);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") chiudiElenco(); });
+
+  // ---------- Lettura vocale dei riquadri ----------
+  let letturaAttiva = true;
+  try { letturaAttiva = localStorage.getItem("postolibero.lettura") !== "0"; } catch (e) { /* ignora */ }
+  const sintesi = window.speechSynthesis;
+  function vocItaliana() {
+    const voci = sintesi ? sintesi.getVoices() : [];
+    return voci.find((v) => /^it[-_]IT/i.test(v.lang) && v.localService) || voci.find((v) => /^it/i.test(v.lang)) || null;
+  }
+  function leggi(testo) {
+    if (!sintesi || !testo) return;
+    sintesi.cancel();
+    const u = new SpeechSynthesisUtterance(testo);
+    u.lang = "it-IT";
+    const v = vocItaliana();
+    if (v) u.voice = v;
+    u.rate = 1;
+    sintesi.speak(u);
+  }
+  mappa.on("popupopen", (e) => {
+    if (!letturaAttiva) return;
+    const el = e.popup.getElement && e.popup.getElement();
+    const pop = el ? el.querySelector(".pop") : null;
+    if (pop) leggi(pop.dataset.voce);
+  });
+  mappa.on("popupclose", () => { if (sintesi) sintesi.cancel(); });
+  if (!sintesi) { $("riga-lettura").hidden = true; }
+  $("lettura").value = letturaAttiva ? "1" : "0";
+  $("lettura").addEventListener("change", (e) => {
+    letturaAttiva = e.target.value === "1";
+    try { localStorage.setItem("postolibero.lettura", letturaAttiva ? "1" : "0"); } catch (err) { /* ignora */ }
+    if (letturaAttiva) leggi("Lettura vocale attiva.");
+    else if (sintesi) sintesi.cancel();
+  });
 
   // ---------- Auto-refresh ----------
   // Ogni N secondi fa come premere "posizione" e poi "aggiorna".
