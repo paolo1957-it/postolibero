@@ -132,10 +132,66 @@
     return lista;
   }
 
+  // ---------- Parcheggi salvati nel sito ----------
+  // Ogni settimana GitHub scarica i parcheggi delle zone principali (Pavia, Milano…)
+  // e li salva nella cartella "osm" del sito, divisi in tessere di 0,02 gradi.
+  // Lì l'app li legge dal sito, senza dipendere dai server pubblici di OpenStreetMap.
+  let indiceSito = null, indiceLetto = 0;
+  async function leggiIndice() {
+    if (indiceSito && Date.now() - indiceLetto < 3600000) return indiceSito;
+    try {
+      indiceSito = await fetchJson("osm/indice.json", {}, 8000);
+      indiceLetto = Date.now();
+    } catch (e) { indiceSito = null; }
+    return indiceSito;
+  }
+  function riquadro(lat, lon, raggio) {
+    const dLat = raggio / 111320, dLon = raggio / (111320 * Math.cos(lat * Math.PI / 180));
+    return { s: lat - dLat, n: lat + dLat, w: lon - dLon, e: lon + dLon };
+  }
+  // completa = true: la zona deve contenere tutto il cerchio di ricerca
+  async function caricaDalSito(lat, lon, raggio, completa) {
+    const ind = await leggiIndice();
+    if (!ind || !ind.zone) return null;
+    const r = riquadro(lat, lon, raggio);
+    const zone = Object.values(ind.zone).filter((z) => {
+      const [s, w, n, e] = z.bbox;
+      return completa ? (r.s >= s && r.n <= n && r.w >= w && r.e <= e)
+        : (lat >= s && lat <= n && lon >= w && lon <= e);
+    });
+    if (!zone.length) return null;
+    const passo = ind.passo || 0.02;
+    const esistenti = new Set(zone.flatMap((z) => z.tessere || []));
+    const nomi = [];
+    for (let i = Math.floor(r.s / passo); i <= Math.floor(r.n / passo); i++) {
+      for (let j = Math.floor(r.w / passo); j <= Math.floor(r.e / passo); j++) {
+        const t = `t_${i}_${j}.json`;
+        if (esistenti.has(t)) nomi.push(t);
+      }
+    }
+    const parti = await Promise.all(nomi.map((t) => fetchJson("osm/" + t, {}, 12000)));
+    const elementi = parti.flatMap((p) => p.elements || []);
+    const aggiornato = zone.map((z) => z.aggiornato).sort()[0];
+    return { json: { elements: elementi }, aggiornato };
+  }
+
   async function caricaOsm(lat, lon, raggio) {
     const chiave = `${lat.toFixed(3)},${lon.toFixed(3)},${raggio}`;
     const c = cacheOsm.get(chiave);
     if (c && Date.now() - c.t < 10 * 60000) return PL.analizzaOverpass(c.json, lat, lon, raggio);
+
+    // 1. Prima i parcheggi salvati nel sito, se la zona è coperta
+    try {
+      const sito = await caricaDalSito(lat, lon, raggio + 150, true);
+      if (sito) {
+        cacheOsm.set(chiave, { t: Date.now(), json: sito.json });
+        stato.osmDaSito = sito.aggiornato;
+        stato.osmDaRiserva = null;
+        return PL.analizzaOverpass(sito.json, lat, lon, raggio);
+      }
+    } catch (e) { console.warn("Parcheggi del sito non disponibili", e); }
+    stato.osmDaSito = null;
+    // 2. Altrimenti (fuori zona) dai server pubblici di OpenStreetMap
     const query = PL.queryOverpass(lat, lon, raggio + 150);
     const fine = new AbortController();
 
@@ -185,6 +241,15 @@
       stato.osmDaRiserva = null;
       return PL.analizzaOverpass(json, lat, lon, raggio);
     } catch (e) {
+      // 3. Server non disponibili: dati del sito anche se coprono solo in parte il cerchio
+      try {
+        const sito = await caricaDalSito(lat, lon, raggio + 150, false);
+        if (sito) {
+          stato.osmDaSito = sito.aggiornato;
+          stato.osmDaRiserva = null;
+          return PL.analizzaOverpass(sito.json, lat, lon, raggio);
+        }
+      } catch (err) { /* niente */ }
       const riserva = cercaRiserva(lat, lon, raggio);
       if (riserva) {
         stato.osmDaRiserva = riserva.t;
@@ -363,7 +428,10 @@
       messaggio(`OpenStreetMap non risponde: mostro i parcheggi salvati il ${quando}. Riprovo ${riprovo(prossima)}.`, true);
     } else {
       const dove = stato.centro.daGps ? "dalla tua posizione" : "dal punto cercato";
-      messaggio(`Entro ${PL.formattaDistanza(stato.raggio)} ${dove} · aggiornato alle ${ora}` +
+      const parcheggiDel = stato.osmDaSito
+        ? " · parcheggi del " + new Date(stato.osmDaSito).toLocaleDateString("it-IT", { day: "numeric", month: "long" })
+        : "";
+      messaggio(`Entro ${PL.formattaDistanza(stato.raggio)} ${dove} · aggiornato alle ${ora}${parcheggiDel}` +
         (Segnalazioni.condiviso ? "" : " · segnalazioni solo su questo dispositivo"));
     }
   }
