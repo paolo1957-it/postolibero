@@ -702,7 +702,34 @@
   }
   $("btn-elenco").addEventListener("click", apriElenco);
   $("btn-chiudi").addEventListener("click", chiudiElenco);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") chiudiElenco(); });
+
+  // ---------- Guida ----------
+  let tornaA = null;
+  function apriGuida(e) {
+    tornaA = e && e.currentTarget ? e.currentTarget : $("btn-guida");
+    $("guida").hidden = false;
+    $("guida").querySelector(".pannello-corpo").scrollTop = 0;
+    $("btn-guida").setAttribute("aria-expanded", "true");
+    $("btn-chiudi-guida").focus();
+  }
+  function chiudiGuida() {
+    if ($("guida").hidden) return false;
+    $("guida").hidden = true;
+    $("btn-guida").setAttribute("aria-expanded", "false");
+    if (tornaA && tornaA.offsetParent) tornaA.focus();
+    return true;
+  }
+  $("btn-guida").addEventListener("click", apriGuida);
+  $("btn-guida-elenco").addEventListener("click", apriGuida);
+  $("btn-chiudi-guida").addEventListener("click", chiudiGuida);
+  // I link dell'indice scorrono dentro la guida
+  $("guida").querySelectorAll(".g-indice a").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    const dest = $("guida").querySelector(a.getAttribute("href"));
+    if (dest) dest.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  $("guida-versione").textContent = "Versione " + (cfg.versione || "");
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !chiudiGuida()) chiudiElenco(); });
 
   // ---------- Lettura vocale dei riquadri ----------
   let letturaAttiva = true;
