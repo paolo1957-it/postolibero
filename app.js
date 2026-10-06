@@ -378,12 +378,19 @@
     return true;
   }
 
-  // Colore del segnaposto: verde = posti liberi ora, blu = meno di 4 posti,
-  // grigio = 4 posti o più (o numero di posti non indicato), rosso = pieno
+  // Forma e colore del segnaposto:
+  //   quadrato verde = posti liberi ora (con il numero), rosso = pieno,
+  //   quadrato blu con il numero = fino a 6 posti, quadrato blu con "N" = posti non indicati,
+  //   rettangolo blu (largo il doppio) con il numero dei posti = più di 6 posti
   function coloreLuogo(l) {
     if (l.fonte === "opendata") return l.liberi > 0 ? "verde" : "pieno";
-    if (l.capienza != null && l.capienza < 4) return "blu";
-    return "grigio";
+    if (l.capienza == null || l.capienza <= 6) return "blu";
+    return "blu largo";
+  }
+  function testoLuogo(l) {
+    if (l.fonte === "opendata") return String(l.liberi);
+    if (l.capienza == null) return "N";
+    return String(l.capienza);
   }
 
   // Testi per la lettura vocale
@@ -461,7 +468,7 @@
     aggiornaVisibilitaStalli();
     // Parcheggi
     for (const l of osm.filter((x) => x.categoria === "parcheggio")) {
-      const m = L.marker([l.lat, l.lon], { icon: icona(coloreLuogo(l), "P"), title: l.nome || l.tipo })
+      const m = L.marker([l.lat, l.lon], { icon: icona(coloreLuogo(l), testoLuogo(l)), title: l.nome || l.tipo })
         .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.luoghi);
       markerPerId.set(l.id, m);
     }
@@ -556,7 +563,7 @@
       if (l.disabili) meta.push(`<span>♿ ${l.disabili}</span>`);
       voci.push({ p: 1, d: l.distanza, el: voce(l, {
         id: l.id, classe: coloreLuogo(l),
-        icona: "P", titolo: l.nome || l.via || (l.categoria === "strada" ? "Sosta su strada" : l.tipo), meta
+        icona: l.categoria === "strada" ? "P" : testoLuogo(l), titolo: l.nome || l.via || (l.categoria === "strada" ? "Sosta su strada" : l.tipo), meta
       }) });
     }
 
