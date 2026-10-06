@@ -1,0 +1,55 @@
+yaml
+name: Pubblica sito e aggiorna parcheggi
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * 1"   # ogni lunedì alle 3:17 (ora UTC) scarica i parcheggi
+  workflow_dispatch:         # pulsante "Run workflow" per farlo partire a mano
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pubblica:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scarica i parcheggi da OpenStreetMap
+        if: github.event_name != 'push'
+        continue-on-error: true
+        timeout-minutes: 40
+        run: python3 aggiorna_parcheggi.py
+
+      - name: Salva i parcheggi nel repository
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -d osm ]; then git add osm; fi
+          if git diff --cached --quiet; then
+            echo "Nessuna novità"
+          else
+            git commit -m "Aggiornamento parcheggi $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
