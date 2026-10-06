@@ -1,6 +1,6 @@
 # PostoLibero
 
-Web app per il telefono che mostra dove parcheggiare entro 1 km dalla tua posizione (raggio regolabile a 200m ,500m o 2 km).
+Web app per il telefono che mostra dove parcheggiare entro 1 km dalla tua posizione (raggio regolabile a 500 m o 2 km).
 
 ## Cosa mostra
 
@@ -31,6 +31,16 @@ Senza configurazione le segnalazioni restano sul tuo telefono. Per condividerle 
 2. SQL Editor → incolla ed esegui `supabase.sql`
 3. Project Settings → API: copia **Project URL** e **anon public key** in `config.js` → `supabase`
 
+## Città già configurate
+
+- **Bologna**: posti liberi in tempo reale nei parcheggi comunali.
+- **Milano**: parcheggi pubblici e parcheggi di interscambio del Comune (nome e numero di posti, non in tempo reale). File `milano-interscambio.geojson`; i parcheggi pubblici vengono scaricati dal portale del Comune, oppure dal file `milano-parcheggi-pubblici.geojson` se lo carichi nel sito.
+- **Pavia**: i dataset pubblicati non hanno coordinate, quindi si usano OpenStreetMap e le segnalazioni.
+
+## Parcheggi salvati nel sito (Pavia, Milano, Varese e Biandronno)
+
+Ogni lunedì GitHub esegue `aggiorna_parcheggi.py` (workflow `.github/workflows/pubblica.yml`), scarica da OpenStreetMap i parcheggi delle zone elencate in `ZONE` e li salva nella cartella `osm/` divisi in tessere. Nelle zone coperte l'app legge da lì; fuori zona interroga i server pubblici. Il workflow pubblica anche il sito a ogni caricamento di file (impostazione Pages: *Source = GitHub Actions*). Per farlo partire subito: Actions → *Pubblica sito e aggiorna parcheggi* → *Run workflow*.
+
 ## Aggiungere la tua città
 
 In `config.js` → `openData` aggiungi il dataset del tuo comune. I campi più comuni (`posti_liberi`, `posti_totali`, `coordinate`, `lat`/`lon`…) vengono riconosciuti da soli; altrimenti indica i nomi in `campi`. Il dataset di Bologna è preconfigurato: controlla al primo avvio che i posti compaiano, e se non escono specifica i nomi dei campi.
@@ -38,10 +48,13 @@ In `config.js` → `openData` aggiungi il dataset del tuo comune. I campi più c
 ## File
 
 - `index.html`, `style.css`: interfaccia
-- `js/core.js`: logica (distanze, lettura dati OSM e open data, filtro segnalazioni)
-- `js/segnalazioni.js`: invio e lettura segnalazioni (Supabase o locale)
-- `js/app.js`: mappa, GPS, elenco
-- `config.js`: impostazioni
+- `core.js`: logica (distanze, lettura dati OSM e open data, filtro segnalazioni)
+- `segnalazioni.js`: invio e lettura segnalazioni (Supabase o locale)
+- `app.js`: mappa, GPS, elenco
+- `config.js`: impostazioni e fonti open data
+- `milano-interscambio.geojson`: parcheggi di interscambio di Milano
+- `aggiorna_parcheggi.py`, `.github/workflows/pubblica.yml`: scaricamento settimanale dei parcheggi e pubblicazione
+- `osm/`: parcheggi salvati (creata da GitHub, non toccare)
 - `sw.js`, `manifest.webmanifest`, `icon.svg`: installazione come app
 
 ## Limiti da sapere
