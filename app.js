@@ -799,6 +799,12 @@
   avviaGps();
 
   if ("serviceWorker" in navigator && window.isSecureContext) {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    // Quando arriva una versione nuova dell'app, la pagina si ricarica da sola una volta
+    const cerano = !!navigator.serviceWorker.controller;
+    let ricaricata = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (cerano && !ricaricata) { ricaricata = true; location.reload(); }
+    });
+    navigator.serviceWorker.register("sw.js").then((reg) => reg.update()).catch(() => {});
   }
 })();

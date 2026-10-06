@@ -1,10 +1,14 @@
 // PostoLibero – service worker: rende l'app installabile e apribile offline.
 // I dati (parcheggi, segnalazioni) vengono sempre scaricati dalla rete.
-const CACHE = "postolibero-15b";
+// Cambia il nome della cache a ogni aggiornamento: così l'iPhone capisce che c'è una versione nuova.
+const CACHE = "postolibero-15c";
 const FILE = ["./", "index.html", "style.css", "config.js", "core.js", "segnalazioni.js", "app.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILE)).then(() => self.skipWaiting()));
+  // "reload": scarica i file dal sito, non dalla memoria del browser
+  e.waitUntil(caches.open(CACHE)
+    .then((c) => c.addAll(FILE.map((f) => new Request(f, { cache: "reload" }))))
+    .then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((k) => Promise.all(k.filter((x) => x !== CACHE).map((x) => caches.delete(x)))).then(() => self.clients.claim()));
@@ -12,12 +16,18 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
-  // Rete prima, cache come riserva
+  // Sempre dalla rete chiedendo al sito se il file è cambiato ("no-cache"),
+  // la copia salvata serve solo senza connessione.
+  const richiesta = e.request.mode === "navigate"
+    ? new Request(url.href, { cache: "no-cache", credentials: "same-origin" })
+    : new Request(e.request, { cache: "no-cache" });
   e.respondWith(
-    fetch(e.request).then((r) => {
-      const copia = r.clone();
-      caches.open(CACHE).then((c) => c.put(e.request, copia));
+    fetch(richiesta).then((r) => {
+      if (r.ok) {
+        const copia = r.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, copia));
+      }
       return r;
-    }).catch(() => caches.match(e.request))
+    }).catch(() => caches.match(e.request, { ignoreSearch: true }))
   );
 });
