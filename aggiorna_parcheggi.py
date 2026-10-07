@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 ZONE = {
     # Pavia con Travacò Siccomario (a sud, fino al Po) e Villanova d'Ardenghi (a ovest);
     # comprende anche San Martino Siccomario, Carbonara al Ticino e parte di Zerbolò
-    "Pavia": (45.105, 9.010, 45.250, 9.215),
+    "Pavia": (45.100, 9.010, 45.260, 9.215),
     "Milano": (45.380, 9.030, 45.540, 9.290),
     # Varese e Biandronno in un'unica zona: comprende anche i paesi in mezzo
     # (Gavirate, Comerio, Barasso, Casciago, Luvinate…) e la sponda del lago di Varese
