@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
   <div class="app">
@@ -146,7 +146,7 @@
 
         <nav class="g-indice" aria-label="Argomenti">
           <a href="#g-mappa">Segnaposto</a><a href="#g-pulsanti">Pulsanti</a><a href="#g-elenco">Elenco e impostazioni</a>
-          <a href="#g-segnalazioni">Segnalazioni</a><a href="#g-dati">Da dove vengono i dati</a><a href="#g-consigli">Consigli</a>
+          <a href="#g-segnalazioni">Segnalazioni</a><a href="#g-consigli">Consigli</a>
         </nav>
 
         <section id="g-mappa">
@@ -211,19 +211,6 @@
           </ul>
         </section>
 
-        <section id="g-dati">
-          <h3>Da dove vengono i dati</h3>
-          <ul class="g-punti">
-            <li><b>OpenStreetMap</b>: parcheggi, garage e strade con sosta, con posti, tariffa e posti disabili quando sono indicati.
-              Dice <i>dove</i> si può parcheggiare, non se c'è posto adesso. Per <b>Pavia</b> (con Travacò Siccomario e Villanova d'Ardenghi), <b>Milano</b>, <b>Varese</b> e <b>Biandronno</b> (con i paesi tra Varese e il lago) questi dati vengono
-              scaricati una volta alla settimana e salvati nel sito, così l'app li trova sempre; altrove vengono chiesti ogni volta
-              ai server di OpenStreetMap. La data dei parcheggi salvati compare nella riga in alto dell'elenco.</li>
-            <li><b>Comune di Bologna</b>: posti liberi in tempo reale nei parcheggi comunali.</li>
-            <li><b>Comune di Milano</b>: parcheggi pubblici e di interscambio con nome e numero di posti.</li>
-            <li><b>Utenti</b>: le segnalazioni di posti liberi e occupati.</li>
-          </ul>
-          <p>Se i server di OpenStreetMap sono sovraccarichi l'app riprova da sola e intanto mostra i parcheggi salvati l'ultima volta in quella zona.</p>
-        </section>
 
         <section id="g-consigli">
           <h3>Consigli</h3>
@@ -242,9 +229,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="config.js?v=19"></script>
-  <script src="core.js?v=19"></script>
-  <script src="segnalazioni.js?v=19"></script>
-  <script src="app.js?v=19"></script>
+  <script src="config.js?v=20"></script>
+  <script src="core.js?v=20"></script>
+  <script src="segnalazioni.js?v=20"></script>
+  <script src="app.js?v=20"></script>
 </body>
 </html>
