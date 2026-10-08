@@ -40,7 +40,7 @@
     --barra: #19386a;
     color-scheme: dark;
   }
-  .leaflet-tile-pane { filter: brightness(.72) contrast(1.1) saturate(.7); }
+  .mappa:not(.satellite) .leaflet-tile-pane { filter: brightness(.72) contrast(1.1) saturate(.7); }
 }
 
 * { box-sizing: border-box; }

@@ -20,10 +20,33 @@
   // ---------- Mappa ----------
   const mappa = L.map("mappa", { zoomControl: false, attributionControl: true })
     .setView([41.9, 12.5], 6);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  }).addTo(mappa);
+  // Sfondo della mappa: stradale (OpenStreetMap) oppure satellite (Esri World Imagery)
+  // con sopra i nomi di strade e località per orientarsi.
+  const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+  const sfondi = {
+    stradale: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }),
+    satellite: L.layerGroup([
+      L.tileLayer(ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 19, maxNativeZoom: 19,
+        attribution: "Immagini: Esri, Vantor, Earthstar Geographics, GIS User Community · Strade: Esri, HERE, Garmin, © OpenStreetMap"
+      }),
+      L.tileLayer(ESRI + "Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, opacity: .8 }),
+      L.tileLayer(ESRI + "Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19 })
+    ])
+  };
+  let sfondoAttivo = "stradale";
+  try { if (localStorage.getItem("postolibero.sfondo") === "satellite") sfondoAttivo = "satellite"; } catch (e) { /* ignora */ }
+  function impostaSfondo(nome) {
+    Object.values(sfondi).forEach((l) => mappa.removeLayer(l));
+    sfondoAttivo = sfondi[nome] ? nome : "stradale";
+    sfondi[sfondoAttivo].addTo(mappa);
+    document.getElementById("mappa").classList.toggle("satellite", sfondoAttivo === "satellite");
+    try { localStorage.setItem("postolibero.sfondo", sfondoAttivo); } catch (e) { /* ignora */ }
+  }
+  impostaSfondo(sfondoAttivo);
 
   const livelli = {
     raggio: L.layerGroup().addTo(mappa),
@@ -857,6 +880,8 @@
   } catch (e) { /* ignora */ }
   $("auto-refresh").value = String(secAuto);
   impostaAuto(secAuto);
+  $("sfondo").value = sfondoAttivo;
+  $("sfondo").addEventListener("change", (e) => impostaSfondo(e.target.value));
   $("suoni").value = suoniAttivi ? "1" : "0";
   $("suoni").addEventListener("change", (e) => {
     suoniAttivi = e.target.value === "1";

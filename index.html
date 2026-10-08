@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=21">
 </head>
 <body>
   <div class="app">
@@ -96,6 +96,14 @@
           <select id="suoni">
             <option value="1" selected>Attivi</option>
             <option value="0">Spenti</option>
+          </select>
+        </label>
+
+        <label class="auto" for="sfondo">
+          <span>MAPPA</span>
+          <select id="sfondo">
+            <option value="stradale" selected>Stradale</option>
+            <option value="satellite">Satellite</option>
           </select>
         </label>
 
@@ -192,6 +200,9 @@
             <dt>SUONI</dt>
             <dd>Un <b>bing</b> quando l'aggiornamento è finito; <b>due note che scendono</b> se i server delle mappe non rispondono;
               <b>tre note che salgono</b> quando compare un nuovo posto libero segnalato da un altro utente.</dd>
+            <dt>MAPPA</dt>
+            <dd><b>Stradale</b> mostra la cartina di OpenStreetMap; <b>Satellite</b> mostra le foto aeree con sopra i nomi di strade e paesi,
+              utile per riconoscere i parcheggi dall'alto.</dd>
             <dt>LETTURA VOCALE</dt>
             <dd>Quando tocchi un segnaposto, l'app legge ad alta voce il riquadro.</dd>
           </dl>
@@ -229,9 +240,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="config.js?v=20"></script>
-  <script src="core.js?v=20"></script>
-  <script src="segnalazioni.js?v=20"></script>
-  <script src="app.js?v=20"></script>
+  <script src="config.js?v=21"></script>
+  <script src="core.js?v=21"></script>
+  <script src="segnalazioni.js?v=21"></script>
+  <script src="app.js?v=21"></script>
 </body>
 </html>

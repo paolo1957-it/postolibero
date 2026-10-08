@@ -4,7 +4,7 @@
  */
 window.POSTOLIBERO_CONFIG = {
   // Versione dell'app, mostrata in diagonale sulla mappa. Aumentala a ogni aggiornamento.
-  versione: "20",
+  versione: "21",
 
   // Raggio di ricerca iniziale in metri (modificabile anche dall'app)
   raggioMetri: 1000,
