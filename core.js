@@ -50,14 +50,14 @@ out tags geom;`;
   }
 
   const TIPI_PARCHEGGIO = {
-    surface: "A raso",
+    surface: "Area di sosta",
     "multi-storey": "Multipiano",
     underground: "Interrato",
     rooftop: "Sul tetto",
     street_side: "Bordo strada",
     lane: "Bordo strada",
     carports: "Posti coperti",
-    garage_boxes: "Box"
+    garage_boxes: "Garage"
   };
 
   function intOrNull(v) {
