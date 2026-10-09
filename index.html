@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=22">
+  <link rel="stylesheet" href="style.css?v=24">
 </head>
 <body>
   <div class="app">
@@ -165,9 +165,10 @@
             <li><span class="g-segno"><span class="mk blu">4</span></span><div><b>Quadrato blu con numero</b>: parcheggio piccolo, da 1 a 6 posti in tutto.</div></li>
             <li><span class="g-segno"><span class="mk blu largo">120</span></span><div><b>Rettangolo blu con numero</b>: parcheggio con più di 6 posti in tutto.</div></li>
             <li><span class="g-segno"><span class="mk blu">N</span></span><div><b>Quadrato blu con N</b>: parcheggio di cui non si sa quanti posti ha.</div></li>
+            <li><span class="g-segno"><span class="mk blu largo">40</span></span><div><b>Numero stimato</b>: se la mappa non dice quanti posti ci sono, l'app li stima dalla superficie dell'area di sosta (circa 25 m² per auto) o dalla lunghezza della strada. Nel riquadro compare "circa", nell'elenco il segno ~. La stima può sbagliare anche di un terzo.</div></li>
             <li><span class="g-segno"><span class="segn-box"><span class="mk segn libero"></span><span class="segn-eta">5 min</span></span></span><div><b>Pallino verde</b>: posto libero segnalato da un utente; accanto, da quanti minuti. Sparisce dopo 2 ore.</div></li>
             <li><span class="g-segno"><span class="mk segn occupato"></span></span><div><b>Pallino rosso</b>: qualcuno ha appena parcheggiato lì.</div></li>
-            <li><span class="g-segno"><span class="g-linea"></span></span><div><b>Linea blu lungo una strada</b>: tratto di strada dove si può sostare.</div></li>
+            <li><span class="g-segno"><span class="g-linea"></span></span><div><b>Linea blu lungo una strada</b>: tratto di strada dove si può sostare. Avvicinando molto la mappa compare a metà della linea un segnaposto con il numero stimato di posti.</div></li>
             <li><span class="g-segno"><span class="io"></span></span><div><b>Punto azzurro</b>: sei tu. Il <b>cerchio tratteggiato</b> è il raggio di ricerca.</div></li>
           </ul>
           <p>Tocca un segnaposto per aprire il <b>riquadro</b> con nome, posti, tariffa e distanza: l'app lo legge ad alta voce
@@ -240,9 +241,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="config.js?v=22"></script>
-  <script src="core.js?v=22"></script>
-  <script src="segnalazioni.js?v=22"></script>
-  <script src="app.js?v=22"></script>
+  <script src="config.js?v=24"></script>
+  <script src="core.js?v=24"></script>
+  <script src="segnalazioni.js?v=24"></script>
+  <script src="app.js?v=24"></script>
 </body>
 </html>

@@ -52,15 +52,20 @@
     raggio: L.layerGroup().addTo(mappa),
     strade: L.layerGroup().addTo(mappa),
     stalli: L.layerGroup(),
+    numeriStrade: L.layerGroup(),
     luoghi: L.layerGroup().addTo(mappa),
     segn: L.layerGroup().addTo(mappa),
     io: L.layerGroup().addTo(mappa)
   };
   const markerPerId = new Map();
 
+  // Da zoom 17 i singoli stalli, da zoom 18 il numero di posti stimato sulle strade
+  const ZOOM_NUMERI_STRADE = 18;
   function aggiornaVisibilitaStalli() {
     if (mappa.getZoom() >= 17) livelli.stalli.addTo(mappa);
     else livelli.stalli.remove();
+    if (mappa.getZoom() >= ZOOM_NUMERI_STRADE) livelli.numeriStrade.addTo(mappa);
+    else livelli.numeriStrade.remove();
   }
   mappa.on("zoomend", aggiornaVisibilitaStalli);
   mappa.on("dragstart", () => { stato.seguiGps = false; });
@@ -549,6 +554,9 @@
       const linea = L.polyline(l.geom.map((p) => [p.lat, p.lon]), { color: "#1b4f9c", weight: 6, opacity: .55 })
         .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.strade);
       markerPerId.set(l.id, linea);
+      // segnaposto con il numero di posti a metà della strada (visibile da zoom 18)
+      L.marker([l.lat, l.lon], { icon: icona(coloreLuogo(l), testoLuogo(l)), title: l.nome || l.tipo })
+        .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.numeriStrade);
     }
     // Stalli singoli (visibili da zoom 17)
     for (const l of osm.filter((x) => x.categoria === "stallo")) {
@@ -613,7 +621,7 @@
     const apri = () => {
       const m = markerPerId.get(opts.id);
       stato.seguiGps = false;
-      mappa.setView([l.lat, l.lon], Math.max(mappa.getZoom(), 17));
+      mappa.setView([l.lat, l.lon], Math.max(mappa.getZoom(), l.categoria === "strada" ? ZOOM_NUMERI_STRADE : 17));
       if (m) setTimeout(() => m.openPopup(), 250);
       chiudiElenco();
     };
@@ -654,7 +662,7 @@
       if (l.disabili) meta.push(`<span>♿ ${l.disabili}</span>`);
       voci.push({ p: 1, d: l.distanza, el: voce(l, {
         id: l.id, classe: coloreLuogo(l),
-        icona: l.categoria === "strada" ? "P" : testoLuogo(l), titolo: l.nome || l.via || (l.categoria === "strada" ? "Sosta su strada" : l.tipo), meta
+        icona: testoLuogo(l), titolo: l.nome || l.via || (l.categoria === "strada" ? "Sosta su strada" : l.tipo), meta
       }) });
     }
 

@@ -57,7 +57,7 @@ def query(s, w, n, e):
   nwr["amenity"="parking_space"]{b};
   node["amenity"="parking_entrance"]{b};
 );
-out tags center;
+out tags geom;
 way{b}["highway"]->.strade;
 (
   way.strade[~"^parking:(both|left|right)$"~"{SOSTA_STRADA}"];
@@ -93,22 +93,66 @@ def scarica(q):
     raise RuntimeError(f"nessun server ha risposto: {ultimo}")
 
 
+M2_PER_POSTO = 25      # stallo + parte di corsia: stima dei posti dalla superficie
+
+
+def area_anello(punti):
+    """Superficie in m² di un contorno chiuso (formula di Gauss su coordinate locali)."""
+    if len(punti) < 4 or punti[0] != punti[-1]:
+        return 0.0
+    lat0 = math.radians(sum(p["lat"] for p in punti) / len(punti))
+    xy = [(p["lon"] * 111320 * math.cos(lat0), p["lat"] * 111320) for p in punti]
+    return abs(sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in zip(xy, xy[1:]))) / 2
+
+
+def area_elemento(el):
+    if el["type"] == "way":
+        return area_anello(el.get("geometry") or [])
+    if el["type"] == "relation":   # multipoligono: contorni esterni meno i buchi
+        tot = 0.0
+        for m in el.get("members") or []:
+            g = [p for p in (m.get("geometry") or []) if p]
+            a = area_anello(g)
+            tot += -a if m.get("role") == "inner" else a
+        return max(tot, 0.0)
+    return 0.0
+
+
+def e_parcheggio(el):
+    return (el.get("tags") or {}).get("amenity") in ("parking", "parking_space", "parking_entrance")
+
+
 def snellisci(el):
-    """Tiene solo i dati utili e arrotonda le coordinate a ~10 cm."""
-    tags = {k: v for k, v in (el.get("tags") or {}).items()
-            if k in TAG_UTILI or k.startswith("parking:")}
+    """Tiene solo i dati utili e arrotonda le coordinate a ~10 cm.
+    Per i parcheggi disegnati come aree salva solo il centro e, per quelli all'aperto
+    senza numero di posti, una stima dei posti ricavata dalla superficie."""
+    tutti = el.get("tags") or {}
+    tags = {k: v for k, v in tutti.items() if k in TAG_UTILI or k.startswith("parking:")}
     out = {"type": el["type"], "id": el["id"], "tags": tags}
     r6 = lambda x: round(x, 6)
     if "lat" in el:
         out["lat"], out["lon"] = r6(el["lat"]), r6(el["lon"])
     if "center" in el:
         out["center"] = {"lat": r6(el["center"]["lat"]), "lon": r6(el["center"]["lon"])}
-    if "geometry" in el:
+    if e_parcheggio(el) and el["type"] != "node":
+        b = el.get("bounds")
+        if b:
+            out["center"] = {"lat": r6((b["minlat"] + b["maxlat"]) / 2),
+                             "lon": r6((b["minlon"] + b["maxlon"]) / 2)}
+        if (tutti.get("amenity") == "parking" and "capacity" not in tutti
+                and tutti.get("parking", "surface") == "surface"):
+            area = area_elemento(el)
+            if area > 0:
+                tags["_postiStimati"] = str(max(1, round(area / M2_PER_POSTO)))
+    elif "geometry" in el:
         out["geometry"] = [{"lat": r6(p["lat"]), "lon": r6(p["lon"])} for p in el["geometry"] if p]
     return out
 
 
 def punto(el):
+    if e_parcheggio(el) and el.get("bounds"):
+        b = el["bounds"]
+        return (b["minlat"] + b["maxlat"]) / 2, (b["minlon"] + b["maxlon"]) / 2
     if "lat" in el:
         return el["lat"], el["lon"]
     if "center" in el:

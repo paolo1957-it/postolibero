@@ -40,7 +40,7 @@
   nwr["amenity"="parking_space"]${a};
   node["amenity"="parking_entrance"]${a};
 );
-out tags center;
+out tags bb;
 way${a}["highway"]->.strade;
 (
   way.strade[~"^parking:(both|left|right)$"~"${VALORI_SOSTA_STRADA}"];
@@ -104,6 +104,23 @@ out tags geom;`;
     return geom[0];
   }
 
+  // Stima dei posti di un'area di sosta all'aperto dalla sua superficie: circa 25 m² per auto
+  // (stallo + parte della corsia di manovra). Nelle zone salvate nel sito la superficie è
+  // calcolata dal contorno vero (tag _postiStimati); altrove si usa il rettangolo che contiene
+  // il parcheggio, ridotto del 30% perché i parcheggi raramente lo riempiono tutto.
+  const M2_PER_POSTO = 25;
+  function stimaPostiArea(el, tags) {
+    const dalSito = intOrNull(tags._postiStimati);
+    if (dalSito) return dalSito;
+    const b = el.bounds;
+    if (!b) return null;
+    const alto = (b.maxlat - b.minlat) * 111320;
+    const largo = (b.maxlon - b.minlon) * 111320 * Math.cos(((b.minlat + b.maxlat) / 2) * Math.PI / 180);
+    const area = alto * largo * 0.7;
+    if (!(area > 0)) return null;
+    return Math.max(1, Math.round(area / M2_PER_POSTO));
+  }
+
   function latiSosta(tags) {
     const lati = [];
     const re = new RegExp(VALORI_SOSTA_STRADA);
@@ -137,6 +154,9 @@ out tags geom;`;
         geom = el.geometry;
         const m = puntoMedio(geom);
         pLat = m.lat; pLon = m.lon;
+      } else if (el.bounds) {
+        pLat = (el.bounds.minlat + el.bounds.maxlat) / 2;
+        pLon = (el.bounds.minlon + el.bounds.maxlon) / 2;
       } else continue;
 
       if (el.type === "way" && el.geometry && !el.center) geom = el.geometry;
@@ -149,6 +169,10 @@ out tags geom;`;
       if (tags.amenity === "parking") {
         categoria = "parcheggio";
         tipo = TIPI_PARCHEGGIO[tags.parking] || "Parcheggio";
+        if (capienza == null && (!tags.parking || tags.parking === "surface")) {
+          capienza = stimaPostiArea(el, tags);
+          if (capienza) tags._capienzaStimata = "1";
+        }
       } else if (tags.amenity === "parking_space") {
         categoria = "stallo";
         tipo = tags.parking_space === "disabled" ? "Stallo disabili" : "Stallo";
