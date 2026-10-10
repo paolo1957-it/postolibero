@@ -896,20 +896,36 @@
       mostraOcchio();
       return;
     }
-    if (bloccoSchermo || richiestaInCorso || !("wakeLock" in navigator)) { mostraOcchio(); return; }
+    if (!("wakeLock" in navigator)) {
+      avvisaSchermo("Questo browser non permette di tenere lo schermo acceso (serve iOS 16.4 o più recente).");
+      mostraOcchio();
+      return;
+    }
+    if (bloccoSchermo || richiestaInCorso) { mostraOcchio(); return; }
     richiestaInCorso = true;
     try {
       const b = await navigator.wakeLock.request("screen");
       b.addEventListener("release", () => { if (bloccoSchermo === b) { bloccoSchermo = null; mostraOcchio(); } });
       if (autoAttivo && document.visibilityState === "visible") bloccoSchermo = b;
       else b.release().catch(() => {});
-    } catch (e) { /* non supportato o negato: l'app funziona come prima */ }
+    } catch (e) {
+      // Spesso il primo tentativo fallisce finché non si tocca lo schermo: l'avviso solo dopo un tocco
+      if (toccato) avvisaSchermo("Il telefono non permette di tenere lo schermo acceso" +
+        (e && e.name ? " (" + e.name + (e.message ? ": " + e.message : "") + ")" : "") + ".");
+    }
     richiestaInCorso = false;
     mostraOcchio();
   }
+  // Spiega una sola volta perché lo schermo non resta acceso, e lo scrive anche nella pagina Elenco
+  let avvisoSchermoDato = false, toccato = false;
+  function avvisaSchermo(testo) {
+    $("nota-schermo").textContent = testo;
+    $("nota-schermo").hidden = false;
+    if (!avvisoSchermoDato) { avvisoSchermoDato = true; toast(testo); }
+  }
   document.addEventListener("visibilitychange", aggiornaSchermoAcceso);
   // Alcuni browser concedono il blocco solo dopo un tocco: si riprova al primo tocco
-  document.addEventListener("pointerdown", () => { if (autoAttivo && !bloccoSchermo) aggiornaSchermoAcceso(); }, { passive: true });
+  document.addEventListener("pointerdown", () => { toccato = true; if (autoAttivo && !bloccoSchermo) aggiornaSchermoAcceso(); }, { passive: true });
   $("occhio").addEventListener("click", () => toast("Schermo sempre acceso finché l'AUTO-REFRESH è attivo"));
   let secAuto = cfg.autoRefreshSecondi ?? 120;
   try {

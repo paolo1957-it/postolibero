@@ -177,6 +177,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: var(--superficie); color: var(--libero); box-shadow: 0 1px 4px rgba(0,0,0,.25);
 }
 .stato.errore { color: var(--pieno); font-weight: 600; }
+.nota-schermo { margin: -6px 0 0; font-size: 13px; color: var(--pieno); }
+.pannello-corpo > * { flex-shrink: 0; }
 
 .sommario { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .kpi {
