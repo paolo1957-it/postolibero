@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=24">
+  <link rel="stylesheet" href="style.css?v=25">
 </head>
 <body>
   <div class="app">
@@ -57,6 +57,9 @@
       <div class="fab-sx">
         <button class="fab" id="btn-guida" type="button" title="Guida all'app" aria-label="Apri la guida all'app" aria-controls="guida" aria-expanded="false">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9.2 9a2.9 2.9 0 1 1 4.1 2.6c-.8.4-1.3 1.1-1.3 2v.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.3" fill="currentColor"/></svg>
+        </button>
+        <button class="fab fab-occhio" id="occhio" type="button" hidden title="Schermo sempre acceso" aria-label="Schermo sempre acceso: AUTO-REFRESH attivo">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>
         </button>
       </div>
 
@@ -184,6 +187,7 @@
             <li><span class="g-segno"><span class="g-fab"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></span><div><b>Posizione</b>: riporta la mappa su di te e la fa seguire mentre ti sposti.</div></li>
             <li><span class="g-segno"><span class="g-fab nero"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="4.5" cy="6" r="1.6" fill="currentColor"/><circle cx="4.5" cy="12" r="1.6" fill="currentColor"/><circle cx="4.5" cy="18" r="1.6" fill="currentColor"/></svg></span></span><div><b>Elenco</b>: apre la pagina con tutti i posti vicini e le impostazioni. Il numerino verde indica quanti posti sono sicuramente liberi.</div></li>
             <li><span class="g-segno"><span class="g-fab"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span><div><b>Aggiorna</b>: riscarica subito tutti i dati.</div></li>
+            <li><span class="g-segno"><span class="g-fab occhio"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg></span></span><div><b>Occhio verde</b> (sotto il ?): lo schermo resta sempre acceso perché l'AUTO-REFRESH è attivo. Sparisce con AUTO-REFRESH a 0.</div></li>
             <li><span class="g-segno"><span class="g-fab"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9.2 9a2.9 2.9 0 1 1 4.1 2.6c-.8.4-1.3 1.1-1.3 2v.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.3" fill="currentColor"/></svg></span></span><div><b>Guida</b> (in alto a sinistra sulla mappa): apre questa pagina.</div></li>
             <li><span class="g-segno"><span class="g-fab verde"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 6.5v7M8.5 10h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span></span><div><b>Posto libero qui</b>: segnala agli altri che dove sei c'è un posto libero.</div></li>
             <li><span class="g-segno"><span class="g-fab rosso"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M4 12.2h16v4.3H4z" fill="currentColor"/><path d="M6.5 16.5v2M17.5 16.5v2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span></span><div><b>Ho parcheggiato</b>: segnala che hai appena occupato il posto dove sei.</div></li>
@@ -197,7 +201,9 @@
           <dl class="g-def">
             <dt>AUTO-REFRESH</dt>
             <dd>Ogni 30, 60 o 120 secondi l'app torna sulla tua posizione e aggiorna i dati da sola. <b>0</b> la spegne. Parte da 120.
-              Si ferma quando l'app è in secondo piano o lo schermo è spento.</dd>
+              Si ferma quando l'app è in secondo piano o lo schermo è spento.
+              Finché è attivo, il telefono non va in standby e lo schermo resta acceso (compare l'occhio verde sulla mappa):
+              in macchina tieni il telefono in carica, a piedi mettilo a 0 per risparmiare batteria.</dd>
             <dt>SUONI</dt>
             <dd>Un <b>bing</b> quando l'aggiornamento è finito; <b>due note che scendono</b> se i server delle mappe non rispondono;
               <b>tre note che salgono</b> quando compare un nuovo posto libero segnalato da un altro utente.</dd>
@@ -241,9 +247,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="config.js?v=24"></script>
-  <script src="core.js?v=24"></script>
-  <script src="segnalazioni.js?v=24"></script>
-  <script src="app.js?v=24"></script>
+  <script src="config.js?v=25"></script>
+  <script src="core.js?v=25"></script>
+  <script src="segnalazioni.js?v=25"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>

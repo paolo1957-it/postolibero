@@ -879,8 +879,38 @@
   function impostaAuto(sec) {
     clearInterval(timerAuto);
     if (sec > 0) timerAuto = setInterval(autoAggiorna, sec * 1000);
+    autoAttivo = sec > 0;
+    aggiornaSchermoAcceso();
     try { localStorage.setItem("postolibero.auto", String(sec)); } catch (e) { /* ignora */ }
   }
+
+  // ---------- Schermo sempre acceso (Wake Lock) ----------
+  // Con l'auto-refresh attivo il telefono non va in standby. Il browser toglie il blocco da solo
+  // quando l'app va in secondo piano o il telefono viene bloccato: al ritorno lo si richiede.
+  let autoAttivo = false, bloccoSchermo = null, richiestaInCorso = false;
+  function mostraOcchio() { $("occhio").hidden = !bloccoSchermo; }
+  async function aggiornaSchermoAcceso() {
+    const vuole = autoAttivo && document.visibilityState === "visible";
+    if (!vuole) {
+      if (bloccoSchermo) { const b = bloccoSchermo; bloccoSchermo = null; b.release().catch(() => {}); }
+      mostraOcchio();
+      return;
+    }
+    if (bloccoSchermo || richiestaInCorso || !("wakeLock" in navigator)) { mostraOcchio(); return; }
+    richiestaInCorso = true;
+    try {
+      const b = await navigator.wakeLock.request("screen");
+      b.addEventListener("release", () => { if (bloccoSchermo === b) { bloccoSchermo = null; mostraOcchio(); } });
+      if (autoAttivo && document.visibilityState === "visible") bloccoSchermo = b;
+      else b.release().catch(() => {});
+    } catch (e) { /* non supportato o negato: l'app funziona come prima */ }
+    richiestaInCorso = false;
+    mostraOcchio();
+  }
+  document.addEventListener("visibilitychange", aggiornaSchermoAcceso);
+  // Alcuni browser concedono il blocco solo dopo un tocco: si riprova al primo tocco
+  document.addEventListener("pointerdown", () => { if (autoAttivo && !bloccoSchermo) aggiornaSchermoAcceso(); }, { passive: true });
+  $("occhio").addEventListener("click", () => toast("Schermo sempre acceso finché l'AUTO-REFRESH è attivo"));
   let secAuto = cfg.autoRefreshSecondi ?? 120;
   try {
     const salvato = localStorage.getItem("postolibero.auto");
