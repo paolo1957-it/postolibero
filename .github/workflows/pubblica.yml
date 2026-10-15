@@ -31,12 +31,19 @@ jobs:
         timeout-minutes: 40
         run: python3 aggiorna_parcheggi.py
 
+      - name: Scarica le ZTL della Lombardia
+        if: github.event_name != 'push'
+        continue-on-error: true
+        timeout-minutes: 20
+        run: python3 aggiorna_ztl.py
+
       - name: Salva i parcheggi nel repository
         if: github.event_name != 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -d osm ]; then git add osm; fi
+          if [ -f ztl.json ]; then git add ztl.json; fi
           if git diff --cached --quiet; then
             echo "Nessuna novità"
           else
