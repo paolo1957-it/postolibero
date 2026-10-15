@@ -50,6 +50,8 @@
 
   const livelli = {
     raggio: L.layerGroup().addTo(mappa),
+    ztl: L.layerGroup().addTo(mappa),
+    varchi: L.layerGroup(),
     strade: L.layerGroup().addTo(mappa),
     stalli: L.layerGroup(),
     numeriStrade: L.layerGroup(),
@@ -66,6 +68,8 @@
     else livelli.stalli.remove();
     if (mappa.getZoom() >= ZOOM_NUMERI_STRADE) livelli.numeriStrade.addTo(mappa);
     else livelli.numeriStrade.remove();
+    if (mappa.getZoom() >= 15) livelli.varchi.addTo(mappa);
+    else livelli.varchi.remove();
   }
   mappa.on("zoomend", aggiornaVisibilitaStalli);
   mappa.on("dragstart", () => { stato.seguiGps = false; });
@@ -338,6 +342,92 @@
     return risultati.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
   }
 
+  // ---------- Zone a traffico limitato ----------
+  // ztl.json è preparato ogni settimana da GitHub (aggiorna_ztl.py): open data dei Comuni
+  // (Milano, Bergamo, Cremona), mappa dei varchi di Pavia e OpenStreetMap per le altre città.
+  let ztl = { aree: [], varchi: [] }, ztlVersione = 0;
+  async function caricaZtl() {
+    try {
+      const d = await fetchJson(cfg.ztl || "ztl.json", {}, 15000);
+      ztl = { aree: d.aree || [], varchi: d.varchi || [] };
+      ztlVersione++;
+      render();
+    } catch (e) { /* senza file ZTL l'app funziona come prima */ }
+  }
+  function dentroAnello(lat, lon, anello) {
+    let dentro = false;
+    for (let i = 0, j = anello.length - 1; i < anello.length; j = i++) {
+      const [xi, yi] = anello[i], [xj, yj] = anello[j];
+      if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) dentro = !dentro;
+    }
+    return dentro;
+  }
+  const PRIORITA_ZONA = { pedonale: 3, ztl: 2, area_c: 1 };
+  // La zona più restrittiva che contiene il punto (o null)
+  function zonaDi(lat, lon) {
+    let migliore = null;
+    for (const a of ztl.aree) {
+      const b = a.bbox;
+      if (lat < b[0] || lat > b[2] || lon < b[1] || lon > b[3]) continue;
+      const dentro = a.poligoni.some((poli) => dentroAnello(lat, lon, poli[0]) && !poli.slice(1).some((buco) => dentroAnello(lat, lon, buco)));
+      if (dentro && (!migliore || PRIORITA_ZONA[a.tipo] > PRIORITA_ZONA[migliore.tipo])) migliore = a;
+    }
+    return migliore;
+  }
+  function zonaLuogo(l) {
+    if (l._zv !== ztlVersione) { l._zona = zonaDi(l.lat, l.lon); l._zv = ztlVersione; }
+    return l._zona;
+  }
+  const zonaChiusa = (z) => z && (z.tipo === "ztl" || z.tipo === "pedonale");
+  function classeZona(l) {
+    const z = zonaLuogo(l);
+    return !z ? "" : z.tipo === "area_c" ? " in-areac" : " in-ztl";
+  }
+  // Nome leggibile: "ZTL di Pavia", "ZTL «Brera»", "area pedonale «Piazza Duomo»"
+  function nomeZona(z) {
+    const generico = !z.nome || /^(z\.?\s*t\.?\s*l\.?|zona a traffico limitato)[\s\-–.z]*(t\.?\s*l\.?)?$/i.test(z.nome.trim()) ||
+      /zona a traffico limitato\s*-?\s*z\.?t\.?l\.?$/i.test(z.nome.trim());
+    const nome = generico ? "" : z.nome.replace(/^z\.?t\.?l\.?\s*/i, "").trim();
+    if (z.tipo === "pedonale") return "area pedonale" + (nome ? " «" + nome + "»" : "");
+    if (z.tipo === "area_c") return "Area C";
+    return "ZTL" + (nome ? " «" + nome + "»" : z.citta ? " di " + z.citta : "");
+  }
+  function avvisoZona(z) {
+    if (z.tipo === "area_c") return { testo: "Dentro Area C: si entra pagando il ticket di Area C (o con i permessi previsti)", voce: "Attenzione: è dentro Area C, si entra con il ticket." };
+    if (z.tipo === "pedonale") return { testo: "Dentro un'" + nomeZona(z) + ": accesso vietato ai veicoli salvo autorizzazione", voce: "Attenzione: è in area pedonale, accesso solo con autorizzazione." };
+    return { testo: "Dentro la " + nomeZona(z) + ": accesso solo con contrassegno", voce: "Attenzione: è dentro la ZTL, accesso solo con contrassegno." };
+  }
+  function disegnaZtl() {
+    if (!stato.centro || !ztl.aree.length) return;
+    const { lat, lon } = stato.centro;
+    const r = (stato.raggio + 3000) / 111320, rl = r / Math.cos(lat * Math.PI / 180);
+    const vicino = (b) => !(b[2] < lat - r || b[0] > lat + r || b[3] < lon - rl || b[1] > lon + rl);
+    const css = getComputedStyle(document.documentElement);
+    const rosso = css.getPropertyValue("--pieno").trim() || "#c23a2f";
+    const arancio = css.getPropertyValue("--attenzione").trim() || "#b87900";
+    const ordine = { area_c: 0, ztl: 1, pedonale: 2 };
+    for (const a of ztl.aree.filter((x) => vicino(x.bbox)).sort((x, y) => ordine[x.tipo] - ordine[y.tipo])) {
+      const forme = a.poligoni.map((poli) => poli.map((anello) => anello.map(([x, y]) => [y, x])));
+      const stile = a.tipo === "area_c"
+        ? { color: arancio, weight: 2, dashArray: "8 6", fillOpacity: 0.04, opacity: 0.8 }
+        : { color: rosso, weight: 2, fillColor: rosso, fillOpacity: a.tipo === "pedonale" ? 0.18 : 0.12, opacity: 0.8 };
+      const av = avvisoZona(a);
+      const testo = `<div class="pop" data-voce="${attr(av.voce)}"><h3>${esc(a.tipo === "area_c" ? "Area C" : a.tipo === "pedonale" ? "Area pedonale" : "ZTL")}${a.citta ? " · " + esc(a.citta) : ""}</h3>` +
+        (a.nome && a.tipo !== "area_c" ? `<p>${esc(a.nome)}</p>` : "") +
+        `<p class="avviso">${esc(av.testo)}</p>` +
+        (a.orari ? `<p>Orari: ${esc(a.orari)}</p>` : "") +
+        (a.deroghe ? `<p>Deroghe: ${esc(a.deroghe)}</p>` : "") +
+        `<p class="fonte">Fonte: ${esc(a.fonte)}. Fa sempre fede la segnaletica.</p></div>`;
+      L.polygon(forme, stile).bindPopup(testo, OPZ_POPUP).addTo(livelli.ztl);
+    }
+    for (const v of ztl.varchi) {
+      if (!vicino([v.lat, v.lon, v.lat, v.lon])) continue;
+      L.marker([v.lat, v.lon], { icon: icona("varco"), title: v.nome, zIndexOffset: -200 })
+        .bindPopup(`<div class="pop" data-voce="${attr("Varco della ZTL. " + v.nome + ".")}"><h3>Varco ZTL</h3><p>${esc(v.nome)}</p><p class="fonte">Fonte: ${esc(v.fonte)}</p></div>`, OPZ_POPUP)
+        .addTo(livelli.varchi);
+    }
+  }
+
   // ---------- Suoni ----------
   // Suoni sintetizzati (nessun file da scaricare). Su iPhone il browser li permette solo
   // dopo il primo tocco sullo schermo, quindi l'audio si "sblocca" al primo tocco.
@@ -471,6 +561,7 @@
     if (f.has("disabili") && !(l.disabili > 0)) return false;
     if (f.has("coperto") && !l.coperto) return false;
     if (f.has("strada") && l.categoria !== "strada" && l.categoria !== "stallo") return false;
+    if (f.has("ztl") && zonaChiusa(zonaLuogo(l))) return false;
     return true;
   }
 
@@ -524,6 +615,12 @@
       if (l.note) righe.push(esc(l.note));
       if (l.fonteNome) righe.push("Fonte: " + esc(l.fonteNome));
     }
+    const zona = zonaLuogo(l);
+    if (zona) {
+      const av = avvisoZona(zona);
+      righe.push(`<span class="avviso">${esc(av.testo)}</span>`);
+      voce.push(av.voce);
+    }
     righe.push(PL.formattaDistanza(l.distanza) + " · " + PL.minutiA_piedi(l.distanza) + " min a piedi");
     voce.push(distanzaParlata(l.distanza) + ", " + minutiParlati(l.distanza) + ".");
     return `<div class="pop" data-voce="${attr(voce.join(" "))}"><h3>${esc(titolo)}</h3>
@@ -545,6 +642,7 @@
       L.circleMarker([lat, lon], { radius: 6, color: "#fff", weight: 2, fillColor: "#172033", fillOpacity: 1 }).addTo(livelli.io);
     }
 
+    disegnaZtl();
     const osm = stato.osm.filter(passaFiltri);
     const reale = stato.reale.filter(passaFiltri);
     const segnVisibili = stato.filtri.size ? [] : stato.segn;
@@ -555,7 +653,7 @@
         .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.strade);
       markerPerId.set(l.id, linea);
       // segnaposto con il numero di posti a metà della strada (visibile da zoom 18)
-      L.marker([l.lat, l.lon], { icon: icona(coloreLuogo(l), testoLuogo(l)), title: l.nome || l.tipo })
+      L.marker([l.lat, l.lon], { icon: icona(coloreLuogo(l) + classeZona(l), testoLuogo(l)), title: l.nome || l.tipo })
         .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.numeriStrade);
     }
     // Stalli singoli (visibili da zoom 17)
@@ -567,14 +665,14 @@
     aggiornaVisibilitaStalli();
     // Parcheggi
     for (const l of osm.filter((x) => x.categoria === "parcheggio")) {
-      const m = L.marker([l.lat, l.lon], { icon: icona(coloreLuogo(l), testoLuogo(l)), title: l.nome || l.tipo })
+      const m = L.marker([l.lat, l.lon], { icon: icona(coloreLuogo(l) + classeZona(l), testoLuogo(l)), title: l.nome || l.tipo })
         .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.luoghi);
       markerPerId.set(l.id, m);
     }
     // Tempo reale
     for (const l of reale) {
       const s = PL.statoDisponibilita(l.liberi, l.capienza);
-      const m = L.marker([l.lat, l.lon], { icon: icona("reale " + coloreLuogo(l), l.liberi), zIndexOffset: 500, title: l.nome })
+      const m = L.marker([l.lat, l.lon], { icon: icona("reale " + coloreLuogo(l) + classeZona(l), l.liberi), zIndexOffset: 500, title: l.nome })
         .bindPopup(popupLuogo(l), OPZ_POPUP).addTo(livelli.luoghi);
       markerPerId.set(l.id, m);
     }
@@ -630,6 +728,13 @@
     return li;
   }
 
+  function tagZona(l) {
+    const z = zonaLuogo(l);
+    if (!z) return "";
+    return z.tipo === "area_c" ? '<span class="tag area-c">Area C</span>'
+      : `<span class="tag ztl">${z.tipo === "pedonale" ? "Area pedonale" : "ZTL"}</span>`;
+  }
+
   function renderLista(osm, reale, segn) {
     const ol = $("lista");
     ol.innerHTML = "";
@@ -645,10 +750,10 @@
     for (const l of reale) {
       const st = PL.statoDisponibilita(l.liberi, l.capienza);
       voci.push({ p: st === "pieno" ? 2 : 0, d: l.distanza, el: voce(l, {
-        id: l.id, classe: coloreLuogo(l), icona: `<span class="num">${l.liberi}</span>`,
+        id: l.id, classe: coloreLuogo(l) + classeZona(l), icona: `<span class="num">${l.liberi}</span>`,
         titolo: l.nome,
         meta: [`<span class="tag ${st === "pieno" ? "pieno" : "reale"}">${st === "pieno" ? "Pieno" : l.liberi + " liberi ora"}</span>`,
-          l.capienza ? `<span>${l.capienza} posti</span>` : ""]
+          l.capienza ? `<span>${l.capienza} posti</span>` : "", tagZona(l)]
       }) });
     }
     const mostraStalli = stato.filtri.has("disabili") || stato.filtri.has("strada");
@@ -660,8 +765,9 @@
       if (l.tariffa === "gratuito") meta.push('<span class="tag gratis">Gratuito</span>');
       else if (l.tariffa === "pagamento") meta.push("<span>A pagamento</span>");
       if (l.disabili) meta.push(`<span>♿ ${l.disabili}</span>`);
+      meta.push(tagZona(l));
       voci.push({ p: 1, d: l.distanza, el: voce(l, {
-        id: l.id, classe: coloreLuogo(l),
+        id: l.id, classe: coloreLuogo(l) + classeZona(l),
         icona: testoLuogo(l), titolo: l.nome || l.via || (l.categoria === "strada" ? "Sosta su strada" : l.tipo), meta
       }) });
     }
@@ -971,6 +1077,7 @@
   $("btn-libero").disabled = true;
   $("btn-parcheggiato").disabled = true;
   avviaGps();
+  caricaZtl();
 
   if ("serviceWorker" in navigator && window.isSecureContext) {
     // Quando arriva una versione nuova dell'app, la pagina si ricarica da sola una volta

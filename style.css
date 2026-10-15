@@ -170,6 +170,27 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-variant-numeric: tabular-nums;
 }
 .segn-box { display: flex; align-items: center; gap: 4px; }
+/* ZTL: piccola etichetta sul segnaposto dei parcheggi dentro una ZTL o in Area C */
+.mk, .icona { position: relative; }
+.mk.in-ztl::before, .mk.in-areac::before, .icona.in-ztl::before, .icona.in-areac::before {
+  content: "ZTL"; position: absolute; top: -10px; right: -12px;
+  padding: 1px 3px; border-radius: 4px; border: 1.5px solid #fff;
+  font: 700 10px/1.1 var(--font-body); letter-spacing: .02em; color: #fff; background: var(--pieno);
+  box-shadow: 0 1px 3px rgba(0,0,0,.35);
+}
+.mk.in-areac::before, .icona.in-areac::before { content: "C"; background: var(--attenzione); }
+.icona.in-ztl::before, .icona.in-areac::before { top: -6px; right: -8px; }
+.mk.varco {
+  width: 16px; height: 16px; border-radius: 50%; font-size: 0;
+  background: var(--pieno); border: 2px solid #fff;
+}
+.mk.varco::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: #fff; }
+.tag.ztl { color: #fff; background: var(--pieno); padding: 0 5px; border-radius: 4px; }
+.tag.area-c { color: #fff; background: var(--attenzione); padding: 0 5px; border-radius: 4px; }
+.pop .avviso { color: var(--pieno); font-weight: 600; }
+.pop .fonte { font-size: 14px; }
+.g-area { display: block; width: 56px; height: 34px; border-radius: 6px; border: 2px solid var(--pieno); background: color-mix(in srgb, var(--pieno) 14%, transparent); }
+.g-area.c { border-style: dashed; border-color: var(--attenzione); background: transparent; }
 .segn-box .mk.segn { position: relative; flex: none; }
 .segn-eta {
   font: 700 12px/1 var(--font-body); font-variant-numeric: tabular-nums; white-space: nowrap;

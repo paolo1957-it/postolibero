@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=26">
+  <link rel="stylesheet" href="style.css?v=27">
 </head>
 <body>
   <div class="app">
@@ -130,6 +130,7 @@
           <button class="chip" type="button" data-filtro="disabili" aria-pressed="false">Disabili</button>
           <button class="chip" type="button" data-filtro="coperto" aria-pressed="false">Coperti</button>
           <button class="chip" type="button" data-filtro="strada" aria-pressed="false">Su strada</button>
+          <button class="chip" type="button" data-filtro="ztl" aria-pressed="false">Senza ZTL</button>
         </div>
 
         <ol class="lista" id="lista"></ol>
@@ -137,6 +138,7 @@
         <footer class="fonti">
           Dati: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
           <span id="fonti-extra"></span>.
+          ZTL: open data dei Comuni di Milano (CC BY 4.0), Bergamo e Cremona, mappa dei varchi del Comune di Pavia, OpenStreetMap; fa sempre fede la segnaletica.
           Le aree di sosta OSM indicano dove si può parcheggiare, non se c'è posto in questo momento.
         </footer>
         <button class="link-guida" id="btn-guida-elenco" type="button">Guida all'app →</button>
@@ -173,6 +175,10 @@
             <li><span class="g-segno"><span class="segn-box"><span class="mk segn libero"></span><span class="segn-eta">5 min</span></span></span><div><b>Pallino verde</b>: posto libero segnalato da un utente; accanto, da quanti minuti. Sparisce dopo 2 ore.</div></li>
             <li><span class="g-segno"><span class="mk segn occupato"></span></span><div><b>Pallino rosso</b>: qualcuno ha appena parcheggiato lì.</div></li>
             <li><span class="g-segno"><span class="g-linea"></span></span><div><b>Linea blu lungo una strada</b>: tratto di strada dove si può sostare. Avvicinando molto la mappa compare a metà della linea un segnaposto con il numero stimato di posti.</div></li>
+            <li><span class="g-segno"><span class="g-area"></span></span><div><b>Area rossa</b>: Zona a Traffico Limitato o area pedonale. Si entra solo con il contrassegno (residenti, autorizzati, disabili…). Toccala per vedere di che zona si tratta.</div></li>
+            <li><span class="g-segno"><span class="mk blu largo in-ztl">25</span></span><div><b>Etichetta rossa "ZTL"</b> sul segnaposto: il parcheggio è dentro una ZTL, raggiungibile solo con contrassegno.</div></li>
+            <li><span class="g-segno"><span class="g-area c"></span></span><div><b>Bordo arancione tratteggiato</b> (Milano): Area C. Si entra pagando il ticket; i parcheggi dentro hanno l'etichetta arancione "C".</div></li>
+            <li><span class="g-segno"><span class="mk varco"></span></span><div><b>Pallino rosso con centro bianco</b>: varco con telecamera all'ingresso della ZTL (visibile avvicinando la mappa).</div></li>
             <li><span class="g-segno"><span class="io"></span></span><div><b>Punto azzurro</b>: sei tu. Il <b>cerchio tratteggiato</b> è il raggio di ricerca.</div></li>
           </ul>
           <p>Tocca un segnaposto per aprire il <b>riquadro</b> con nome, posti, tariffa e distanza: l'app lo legge ad alta voce
@@ -215,7 +221,7 @@
             <dd>Quando tocchi un segnaposto, l'app legge ad alta voce il riquadro.</dd>
           </dl>
           <p>Sotto trovi tre numeri riassuntivi (posti liberi nei parcheggi, posti segnalati liberi, aree di sosta in zona),
-            i <b>filtri</b> Gratuiti, Disabili, Coperti, Su strada, e l'<b>elenco</b>: prima i posti sicuramente liberi, poi gli altri dal più vicino.
+            i <b>filtri</b> Gratuiti, Disabili, Coperti, Su strada, Senza ZTL (toglie i parcheggi dentro ZTL e aree pedonali), e l'<b>elenco</b>: prima i posti sicuramente liberi, poi gli altri dal più vicino.
             Tocca una riga per vederla sulla mappa.</p>
           <p>Le scelte restano memorizzate sul telefono.</p>
         </section>
@@ -248,9 +254,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="config.js?v=26"></script>
-  <script src="core.js?v=26"></script>
-  <script src="segnalazioni.js?v=26"></script>
-  <script src="app.js?v=26"></script>
+  <script src="config.js?v=27"></script>
+  <script src="core.js?v=27"></script>
+  <script src="segnalazioni.js?v=27"></script>
+  <script src="app.js?v=27"></script>
 </body>
 </html>
