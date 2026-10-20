@@ -62,3 +62,8 @@ In `config.js` → `openData` aggiungi il dataset del tuo comune. I campi più c
 - OpenStreetMap indica *dove* si può parcheggiare, non se c'è posto in quel momento. La copertura degli stalli su strada varia molto da zona a zona.
 - Le segnalazioni valgono quanto il numero di persone che usano l'app.
 - I server pubblici Overpass e Nominatim hanno limiti d'uso: vanno bene per uso personale; per molti utenti conviene un server proprio.
+
+## Statistiche d'uso
+
+Statistiche anonime, senza cookie, con GoatCounter: https://parcheggi.goatcounter.com (si accede con l'account GoatCounter di Paolo).
+La guida è anche una pagina a sé: `guida.html` (https://paolo1957-it.github.io/postolibero/guida.html).

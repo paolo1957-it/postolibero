@@ -443,6 +443,26 @@
   document.addEventListener("pointerdown", sbloccaAudio, { passive: true });
   document.addEventListener("touchend", sbloccaAudio, { passive: true });
 
+  // L'iPhone fa parlare l'app solo dopo che la voce è partita una volta da un tocco.
+  // Al primo tocco qualsiasi la sblocchiamo: se c'era già stato un aggiornamento, l'avviso viene detto subito.
+  const AVVISO = "Mappa sempre attiva - Refresh";
+  let voceSbloccata = false, avvisoInSospeso = false;
+  function sbloccaVoce() {
+    const s = window.speechSynthesis;
+    if (voceSbloccata || !s) return;
+    voceSbloccata = true;
+    const dire = avvisoInSospeso && suoniAttivi;
+    avvisoInSospeso = false;
+    const u = new SpeechSynthesisUtterance(dire ? AVVISO : " ");
+    u.lang = "it-IT";
+    if (!dire) u.volume = 0;
+    const v = vocItaliana();
+    if (v) u.voice = v;
+    s.speak(u);
+  }
+  document.addEventListener("touchend", sbloccaVoce, { passive: true });
+  document.addEventListener("click", sbloccaVoce, { passive: true });
+
   // note: elenco di [frequenza Hz, inizio s, durata s]
   function suona(note, volume) {
     if (!suoniAttivi || !audio || document.hidden) return;
@@ -460,8 +480,21 @@
       osc.stop(t0 + inizio + durata + 0.05);
     }
   }
+  // Al posto del "bing" l'app dice "Mappa sempre attiva - Refresh" (senza sintesi vocale resta il bing).
+  function parlaAggiornato() {
+    if (!suoniAttivi || document.hidden) return;
+    const s = window.speechSynthesis;
+    if (!s) { suona([[1318.5, 0, 0.6], [2637, 0, 0.25]], 0.3); return; }
+    if (!voceSbloccata) { avvisoInSospeso = true; return; }   // lo dice al primo tocco
+    if (s.speaking) return;   // non interrompe la lettura di un riquadro
+    const u = new SpeechSynthesisUtterance(AVVISO);
+    u.lang = "it-IT";
+    const v = vocItaliana();
+    if (v) u.voice = v;
+    s.speak(u);
+  }
   const SUONO = {
-    aggiornato: () => suona([[1318.5, 0, 0.6], [2637, 0, 0.25]], 0.3),          // "bing"
+    aggiornato: () => parlaAggiornato(),   // voce "Mappa sempre attiva - Refresh"
     errore: () => suona([[392, 0, 0.25], [311, 0.22, 0.45]], 0.3),             // due note che scendono
     nuovoPosto: () => suona([[784, 0, 0.18], [1046.5, 0.15, 0.18], [1568, 0.3, 0.5]], 0.32) // tre note che salgono
   };
@@ -925,7 +958,6 @@
     return true;
   }
   $("btn-guida").addEventListener("click", apriGuida);
-  $("btn-guida-elenco").addEventListener("click", apriGuida);
   $("btn-chiudi-guida").addEventListener("click", chiudiGuida);
   // I link dell'indice scorrono dentro la guida
   $("guida").querySelectorAll(".g-indice a").forEach((a) => a.addEventListener("click", (e) => {
@@ -994,7 +1026,7 @@
   // Con l'auto-refresh attivo il telefono non va in standby. Il browser toglie il blocco da solo
   // quando l'app va in secondo piano o il telefono viene bloccato: al ritorno lo si richiede.
   let autoAttivo = false, bloccoSchermo = null, richiestaInCorso = false;
-  function mostraOcchio() { $("occhio").hidden = !bloccoSchermo; }
+  function mostraOcchio() { /* nessun segno sulla mappa: l'avviso è la voce a ogni refresh */ }
   async function aggiornaSchermoAcceso() {
     const vuole = autoAttivo && document.visibilityState === "visible";
     if (!vuole) {
@@ -1032,7 +1064,6 @@
   document.addEventListener("visibilitychange", aggiornaSchermoAcceso);
   // Alcuni browser concedono il blocco solo dopo un tocco: si riprova al primo tocco
   document.addEventListener("pointerdown", () => { toccato = true; if (autoAttivo && !bloccoSchermo) aggiornaSchermoAcceso(); }, { passive: true });
-  $("occhio").addEventListener("click", () => toast("Schermo sempre acceso finché l'AUTO-REFRESH è attivo"));
   let secAuto = cfg.autoRefreshSecondi ?? 120;
   try {
     const salvato = localStorage.getItem("postolibero.auto");

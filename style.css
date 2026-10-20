@@ -114,9 +114,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   position: absolute; left: 16px; top: 16px; z-index: 900;
   display: flex; flex-direction: column; align-items: center; gap: 12px;
 }
-/* Occhio verde: schermo tenuto acceso (Wake Lock) mentre l'auto-refresh è attivo */
-.fab-occhio { width: 40px; height: 40px; background: var(--libero); color: #fff; }
-.g-fab.occhio { background: var(--libero); color: #fff; }
 .fab-azioni {
   position: absolute; left: 16px; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 900;
   display: flex; flex-direction: column; align-items: center; gap: 14px;
@@ -147,6 +144,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-bottom: 1px solid var(--bordo);
 }
 .pannello-testa h2 { margin: 0; font: 700 24px/1.1 var(--font-display); }
+/* Pulsante ovale HELP nella pagina Elenco, tra il titolo e la X */
+.btn-help {
+  margin-left: auto; border: 2px solid var(--blu); border-radius: 999px;
+  padding: 6px 18px; min-height: 40px; background: var(--superficie); color: var(--blu);
+  font: 700 17px/1 var(--font-display); letter-spacing: .08em;
+}
+.btn-help.g-help { margin-left: 0; min-height: 0; display: inline-block; font-size: 14px; padding: 5px 12px; }
 .chiudi {
   width: 44px; height: 44px; border-radius: 50%; border: 0;
   display: grid; place-items: center; background: var(--bg); color: var(--testo);
