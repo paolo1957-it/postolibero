@@ -351,6 +351,7 @@
       const d = await fetchJson(cfg.ztl || "ztl.json", {}, 15000);
       ztl = { aree: d.aree || [], varchi: d.varchi || [] };
       ztlVersione++;
+      disegnaZtl();
       render();
     } catch (e) { /* senza file ZTL l'app funziona come prima */ }
   }
@@ -397,11 +398,12 @@
     if (z.tipo === "pedonale") return { testo: "Dentro un'" + nomeZona(z) + ": accesso vietato ai veicoli salvo autorizzazione", voce: "Attenzione: è in area pedonale, accesso solo con autorizzazione." };
     return { testo: "Dentro la " + nomeZona(z) + ": accesso solo con contrassegno", voce: "Attenzione: è dentro la ZTL, accesso solo con contrassegno." };
   }
+  // Le ZTL si disegnano una volta sola, tutte, e restano sempre visibili sulla mappa
   function disegnaZtl() {
-    if (!stato.centro || !ztl.aree.length) return;
-    const { lat, lon } = stato.centro;
-    const r = (stato.raggio + 3000) / 111320, rl = r / Math.cos(lat * Math.PI / 180);
-    const vicino = (b) => !(b[2] < lat - r || b[0] > lat + r || b[3] < lon - rl || b[1] > lon + rl);
+    livelli.ztl.clearLayers();
+    livelli.varchi.clearLayers();
+    if (!ztl.aree.length && !ztl.varchi.length) return;
+    const vicino = () => true;
     const css = getComputedStyle(document.documentElement);
     const rosso = css.getPropertyValue("--pieno").trim() || "#c23a2f";
     const arancio = css.getPropertyValue("--attenzione").trim() || "#b87900";
@@ -662,7 +664,7 @@
   }
 
   function render() {
-    Object.entries(livelli).forEach(([k, g]) => { if (k !== "io") g.clearLayers(); });
+    Object.entries(livelli).forEach(([k, g]) => { if (k !== "io" && k !== "ztl" && k !== "varchi") g.clearLayers(); });
     markerPerId.clear();
     if (!stato.centro) return;
     const { lat, lon } = stato.centro;
@@ -675,7 +677,6 @@
       L.circleMarker([lat, lon], { radius: 6, color: "#fff", weight: 2, fillColor: "#172033", fillOpacity: 1 }).addTo(livelli.io);
     }
 
-    disegnaZtl();
     const osm = stato.osm.filter(passaFiltri);
     const reale = stato.reale.filter(passaFiltri);
     const segnVisibili = stato.filtri.size ? [] : stato.segn;

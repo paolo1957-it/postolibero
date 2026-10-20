@@ -1,7 +1,7 @@
 // PostoLibero – service worker: rende l'app installabile e apribile offline.
 // I dati (parcheggi, segnalazioni) vengono sempre scaricati dalla rete.
 // Cambia il nome della cache a ogni aggiornamento: così l'iPhone capisce che c'è una versione nuova.
-const CACHE = "postolibero-28";
+const CACHE = "postolibero-29";
 const FILE = ["./", "index.html", "style.css", "config.js", "core.js", "segnalazioni.js", "app.js", "icon.svg", "guida.html", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
