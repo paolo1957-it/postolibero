@@ -66,11 +66,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   z-index: 1000;
 }
 .brand { display: flex; align-items: center; gap: 8px; flex: none; }
-.p-sign {
-  display: grid; place-items: center;
-  width: 34px; height: 34px; border-radius: 7px;
-  border: 2px solid #fff; font: 700 24px/1 var(--font-display);
-}
+/* Logo quadrato da 50 px: quasi alto quanto la barra blu (54 px), con 2 px liberi sopra e sotto */
+.logo { display: block; width: 50px; height: 50px; margin: -6px 0; }
 .brand-name { font: 700 20px/1 var(--font-display); letter-spacing: .01em; }
 .cerca { flex: 1; min-width: 0; }
 .cerca input, .raggio select {
@@ -166,8 +163,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .auto {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 10px 12px; border-radius: 10px; background: var(--bg);
+  position: relative;
 }
 .auto span { font: 700 15px/1 var(--font-display); letter-spacing: .06em; }
+/* Occhio verde al centro della riga AUTO-REFRESH: schermo sempre acceso */
+.auto .occhio {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--libero); color: #fff; pointer-events: none;
+}
+.auto .occhio[hidden] { display: none; }
 .auto select {
   height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--bordo);
   background: var(--superficie); color: var(--testo); font: 600 15px var(--font-body);

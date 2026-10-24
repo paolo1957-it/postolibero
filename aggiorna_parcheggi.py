@@ -219,6 +219,10 @@ def main():
 
     with open(indice_path, "w") as f:
         json.dump(indice, f, indent=1, ensure_ascii=False)
+    # Per la notifica sull'iPhone: riga "zone aggiornate;zone totali" (vedi .github/workflows/pubblica.yml)
+    if os.environ.get("ESITO"):
+        with open(os.environ["ESITO"], "w") as f:
+            f.write(f"{len(ZONE) - errori};{len(ZONE)}\n")
     if errori == len(ZONE):
         sys.exit(1)
 

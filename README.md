@@ -41,6 +41,8 @@ Senza configurazione le segnalazioni restano sul tuo telefono. Per condividerle 
 
 Ogni lunedì GitHub esegue `aggiorna_parcheggi.py` (workflow `.github/workflows/pubblica.yml`), scarica da OpenStreetMap i parcheggi delle zone elencate in `ZONE` e li salva nella cartella `osm/` divisi in tessere. Nelle zone coperte l'app legge da lì; fuori zona interroga i server pubblici. Il workflow pubblica anche il sito a ogni caricamento di file (impostazione Pages: *Source = GitHub Actions*). Per farlo partire subito: Actions → *Pubblica sito e aggiorna parcheggi* → *Run workflow*.
 
+Alla fine dello scaricamento arriva una notifica sull'iPhone con l'app **ntfy** (✅ tutto aggiornato, ⚠️ solo in parte, ❌ fallito). Il nome del canale va messo nel secret del repository `NTFY_TOPIC` (Settings → Secrets and variables → Actions); senza il secret la notifica viene saltata.
+
 ## Aggiungere la tua città
 
 In `config.js` → `openData` aggiungi il dataset del tuo comune. I campi più comuni (`posti_liberi`, `posti_totali`, `coordinate`, `lat`/`lon`…) vengono riconosciuti da soli; altrimenti indica i nomi in `campi`. Il dataset di Bologna è preconfigurato: controlla al primo avvio che i posti compaiano, e se non escono specifica i nomi dei campi.
@@ -55,7 +57,7 @@ In `config.js` → `openData` aggiungi il dataset del tuo comune. I campi più c
 - `milano-interscambio.geojson`: parcheggi di interscambio di Milano
 - `aggiorna_parcheggi.py`, `.github/workflows/pubblica.yml`: scaricamento settimanale dei parcheggi e pubblicazione
 - `osm/`: parcheggi salvati (creata da GitHub, non toccare)
-- `sw.js`, `manifest.webmanifest`, `icon.svg`: installazione come app
+- `sw.js`, `manifest.webmanifest`, icone PNG (`favicon-64.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`): installazione come app
 
 ## Limiti da sapere
 
