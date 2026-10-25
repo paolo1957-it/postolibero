@@ -34,7 +34,7 @@ jobs:
         id: parcheggi
         if: github.event_name != 'push'
         continue-on-error: true
-        timeout-minutes: 40
+        timeout-minutes: 180
         run: python3 aggiorna_parcheggi.py
 
       - name: Scarica le ZTL della Lombardia
