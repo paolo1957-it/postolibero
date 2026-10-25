@@ -171,7 +171,7 @@
   }
 
   // ---------- Parcheggi salvati nel sito ----------
-  // Ogni settimana GitHub scarica i parcheggi delle zone principali (Pavia, Milano…)
+  // Ogni settimana GitHub scarica i parcheggi di tutta la Lombardia (una zona per provincia)
   // e li salva nella cartella "osm" del sito, divisi in tessere di 0,02 gradi.
   // Lì l'app li legge dal sito, senza dipendere dai server pubblici di OpenStreetMap.
   let indiceSito = null, indiceLetto = 0;
@@ -187,19 +187,24 @@
     const dLat = raggio / 111320, dLon = raggio / (111320 * Math.cos(lat * Math.PI / 180));
     return { s: lat - dLat, n: lat + dLat, w: lon - dLon, e: lon + dLon };
   }
-  // completa = true: la zona deve contenere tutto il cerchio di ricerca
+  // Come in Trekking: ogni zona (una per provincia della Lombardia) è scaricata allargata di qualche km,
+  // quindi se il punto è dentro il riquadro di una zona, quella zona copre tutto il cerchio di ricerca.
+  // completa = false (server di OpenStreetMap fuori uso): basta che il punto sia nell'area scaricata.
   async function caricaDalSito(lat, lon, raggio, completa) {
     const ind = await leggiIndice();
     if (!ind || !ind.zone) return null;
     const r = riquadro(lat, lon, raggio);
-    const zone = Object.values(ind.zone).filter((z) => {
-      const [s, w, n, e] = z.bbox;
-      return completa ? (r.s >= s && r.n <= n && r.w >= w && r.e <= e)
-        : (lat >= s && lat <= n && lon >= w && lon <= e);
+    const dentro = ([s, w, n, e]) => lat >= s && lat <= n && lon >= w && lon <= e;
+    const zona = Object.values(ind.zone).find((z) => {
+      if (!z.cartella) {   // vecchio formato (tessere direttamente in osm/), finché GitHub non riscarica
+        const [s, w, n, e] = z.bbox;
+        return completa ? (r.s >= s && r.n <= n && r.w >= w && r.e <= e) : dentro(z.bbox);
+      }
+      return dentro(completa ? z.bbox : (z.scaricata || z.bbox));
     });
-    if (!zone.length) return null;
+    if (!zona) return null;
     const passo = ind.passo || 0.02;
-    const esistenti = new Set(zone.flatMap((z) => z.tessere || []));
+    const esistenti = new Set(zona.tessere || []);
     const nomi = [];
     for (let i = Math.floor(r.s / passo); i <= Math.floor(r.n / passo); i++) {
       for (let j = Math.floor(r.w / passo); j <= Math.floor(r.e / passo); j++) {
@@ -207,10 +212,10 @@
         if (esistenti.has(t)) nomi.push(t);
       }
     }
-    const parti = await Promise.all(nomi.map((t) => fetchJson("osm/" + t, {}, 12000)));
+    const cartella = zona.cartella ? zona.cartella + "/" : "";
+    const parti = await Promise.all(nomi.map((t) => fetchJson("osm/" + cartella + t, {}, 12000)));
     const elementi = parti.flatMap((p) => p.elements || []);
-    const aggiornato = zone.map((z) => z.aggiornato).sort()[0];
-    return { json: { elements: elementi }, aggiornato };
+    return { json: { elements: elementi }, aggiornato: zona.aggiornato };
   }
 
   async function caricaOsm(lat, lon, raggio) {

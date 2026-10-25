@@ -1,31 +1,46 @@
 #!/usr/bin/env python3
 """
-PostoLibero – scarica una volta alla settimana i parcheggi di OpenStreetMap
-per le zone usate più spesso e li salva nel sito, divisi in "tessere".
+PostoLibero – scarica una volta alla settimana i parcheggi di OpenStreetMap di tutta la Lombardia
+e li salva nel sito, divisi in "tessere". Stesso schema di Trekking: una zona per provincia,
+ognuna con la sua cartella (osm/milano/, osm/pavia/, …).
 
 Lo esegue GitHub da solo (vedi .github/workflows/pubblica.yml).
-Per aggiungere una città basta aggiungere una riga in ZONE qui sotto:
+Ogni zona si scarica allargata di MARGINE_KM per lato: così chi è dentro la zona trova tutto
+anche col raggio più grande (2 km). Le zone si scaricano una alla volta (richieste piccole,
+che i server accettano); se una non si scarica, resta quella della settimana prima.
+Per aggiungere o cambiare una zona basta una riga in ZONE:
     "nome": (latitudine sud, longitudine ovest, latitudine nord, longitudine est)
 I valori si trovano su https://bboxfinder.com
 """
 import json
 import math
 import os
+import re
+import shutil
 import sys
 import time
+import unicodedata
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
+# Le 12 province della Lombardia (riquadri arrotondati per eccesso: comprendono anche
+# un po' delle regioni vicine, che non fa male)
 ZONE = {
-    # Pavia con Travacò Siccomario (a sud, fino al Po) e Villanova d'Ardenghi (a ovest);
-    # comprende anche San Martino Siccomario, Carbonara al Ticino e parte di Zerbolò
-    "Pavia": (45.100, 9.010, 45.260, 9.215),
-    "Milano": (45.380, 9.030, 45.540, 9.290),
-    # Varese e Biandronno in un'unica zona: comprende anche i paesi in mezzo
-    # (Gavirate, Comerio, Barasso, Casciago, Luvinate…) e la sponda del lago di Varese
-    "Varese e Biandronno": (45.770, 8.675, 45.880, 8.890),
+    "Varese": (45.53, 8.50, 46.17, 9.01),
+    "Como": (45.62, 8.82, 46.33, 9.42),
+    "Sondrio": (46.00, 9.19, 46.64, 10.64),
+    "Lecco": (45.65, 9.21, 46.16, 9.58),
+    "Monza e Brianza": (45.52, 9.04, 45.73, 9.53),
+    "Milano": (45.24, 8.69, 45.65, 9.56),
+    "Bergamo": (45.40, 9.40, 46.16, 10.30),
+    "Brescia": (45.18, 9.84, 46.31, 10.85),
+    "Pavia": (44.67, 8.51, 45.44, 9.49),
+    "Lodi": (45.07, 9.32, 45.44, 9.89),
+    "Cremona": (44.97, 9.42, 45.48, 10.54),
+    "Mantova": (44.89, 10.11, 45.44, 11.43),
 }
+MARGINE_KM = 3      # raggio massimo dell'app (2 km) + un po' di scorta
 
 SERVER = [
     "https://overpass.private.coffee/api/interpreter",
@@ -50,15 +65,15 @@ SOSTA_VECCHIA = "^(parallel|diagonal|perpendicular|marked)$"
 
 
 def query(s, w, n, e):
-    b = f"({s},{w},{n},{e})"
-    return f"""[out:json][timeout:300][maxsize:536870912];
+    a = f"({s},{w},{n},{e})"
+    return f"""[out:json][timeout:600][maxsize:536870912];
 (
-  nwr["amenity"="parking"]{b};
-  nwr["amenity"="parking_space"]{b};
-  node["amenity"="parking_entrance"]{b};
+  nwr["amenity"="parking"]{a};
+  nwr["amenity"="parking_space"]{a};
+  node["amenity"="parking_entrance"]{a};
 );
 out tags geom;
-way{b}["highway"]->.strade;
+way["highway"]{a}->.strade;
 (
   way.strade[~"^parking:(both|left|right)$"~"{SOSTA_STRADA}"];
   way.strade[~"^parking:lane:(both|left|right)$"~"{SOSTA_VECCHIA}"];
@@ -77,7 +92,7 @@ def scarica(q):
                     "Content-Type": "application/x-www-form-urlencoded",
                     "Accept": "application/json",
                 })
-                with urllib.request.urlopen(req, timeout=360) as r:
+                with urllib.request.urlopen(req, timeout=660) as r:
                     j = json.load(r)
                 if not isinstance(j.get("elements"), list):
                     raise ValueError("risposta senza elementi")
@@ -168,6 +183,20 @@ def nome_tessera(lat, lon):
     return f"t_{math.floor(lat / PASSO)}_{math.floor(lon / PASSO)}.json"
 
 
+def slug(nome):
+    s = unicodedata.normalize("NFD", nome.lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+
+
+def allarga(s, w, n, e):
+    dlat = MARGINE_KM / 111.32
+    dlon = MARGINE_KM / (111.32 * math.cos(math.radians((s + n) / 2)))
+    return tuple(round(x, 4) for x in (s - dlat, w - dlon, n + dlat, e + dlon))
+
+
+# ---------- Programma ----------
+
 def main():
     os.makedirs(CARTELLA, exist_ok=True)
     adesso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -178,12 +207,32 @@ def main():
     except Exception:
         indice = {"passo": PASSO, "zone": {}}
     indice["passo"] = PASSO
+    indice.pop("confine", None)
+
+    def togli(nome):
+        z = indice["zone"].pop(nome)
+        if z.get("cartella"):
+            shutil.rmtree(os.path.join(CARTELLA, z["cartella"]), ignore_errors=True)
+        else:   # vecchio formato: tessere direttamente in osm/
+            for t in z.get("tessere", []):
+                try:
+                    os.remove(os.path.join(CARTELLA, t))
+                except FileNotFoundError:
+                    pass
+        print(f"Tolta la vecchia zona {nome}")
+
+    # Zone del vecchio formato (Pavia, Milano, Varese e Biandronno con le tessere in osm/):
+    # restano finché la provincia nuova non è scaricata, così l'app non resta mai senza dati.
+    vecchie = [k for k, z in indice["zone"].items() if not z.get("cartella")]
 
     errori = 0
-    for nome, (s, w, n, e) in ZONE.items():
+    for n, (nome, bbox) in enumerate(ZONE.items()):
+        if n:
+            time.sleep(20)          # un attimo di pausa tra una zona e l'altra, per i server
         print(f"{nome}…")
+        largo = allarga(*bbox)
         try:
-            elementi = scarica(query(s, w, n, e))
+            elementi = scarica(query(*largo))
         except Exception as ex:
             print(f"  {nome} NON aggiornata, resta la versione precedente: {ex}")
             errori += 1
@@ -199,26 +248,37 @@ def main():
             if not p:
                 continue
             tessere.setdefault(nome_tessera(*p), []).append(snellisci(el))
-        # cancella le tessere vecchie di questa zona e scrive le nuove
-        vecchie = set((indice["zone"].get(nome) or {}).get("tessere", []))
-        for t in vecchie - set(tessere):
-            try:
-                os.remove(os.path.join(CARTELLA, t))
-            except FileNotFoundError:
-                pass
+        if nome in vecchie:
+            togli(nome)
+            vecchie.remove(nome)
+        cartella = slug(nome)
+        shutil.rmtree(os.path.join(CARTELLA, cartella), ignore_errors=True)
+        os.makedirs(os.path.join(CARTELLA, cartella))
         for t, els in tessere.items():
-            with open(os.path.join(CARTELLA, t), "w") as f:
+            with open(os.path.join(CARTELLA, cartella, t), "w") as f:
                 json.dump({"elements": els}, f, separators=(",", ":"), ensure_ascii=False)
         indice["zone"][nome] = {
-            "bbox": [s, w, n, e],
+            "bbox": list(bbox),
+            "scaricata": list(largo),
+            "cartella": cartella,
             "aggiornato": adesso,
             "elementi": len(visti),
             "tessere": sorted(tessere),
         }
-        print(f"  {len(visti)} elementi in {len(tessere)} tessere")
+        dim = sum(os.path.getsize(os.path.join(CARTELLA, cartella, t)) for t in tessere)
+        print(f"  {len(visti)} elementi in {len(tessere)} tessere ({dim // 1024} KB)")
 
+    # Zone non più in ZONE: si tolgono quando tutte le province sono state scaricate
+    if errori == 0:
+        for nome in [k for k in indice["zone"] if k not in ZONE]:
+            togli(nome)
+
+    indice["fonte"] = "© OpenStreetMap contributors (ODbL)"
     with open(indice_path, "w") as f:
         json.dump(indice, f, indent=1, ensure_ascii=False)
+    totale = sum(z.get("elementi", 0) for z in indice["zone"].values())
+    print(f"Totale: {totale} elementi, {len(ZONE) - errori} zone aggiornate su {len(ZONE)}")
+
     # Per la notifica sull'iPhone: riga "zone aggiornate;zone totali" (vedi .github/workflows/pubblica.yml)
     if os.environ.get("ESITO"):
         with open(os.environ["ESITO"], "w") as f:

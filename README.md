@@ -37,11 +37,14 @@ Senza configurazione le segnalazioni restano sul tuo telefono. Per condividerle 
 - **Milano**: parcheggi pubblici e parcheggi di interscambio del Comune (nome e numero di posti, non in tempo reale). File `milano-interscambio.geojson`; i parcheggi pubblici vengono scaricati dal portale del Comune, oppure dal file `milano-parcheggi-pubblici.geojson` se lo carichi nel sito.
 - **Pavia**: i dataset pubblicati non hanno coordinate, quindi si usano OpenStreetMap e le segnalazioni.
 
-## Parcheggi salvati nel sito (Pavia, Milano, Varese e Biandronno)
+## Parcheggi salvati nel sito (tutta la Lombardia)
 
-Ogni lunedì GitHub esegue `aggiorna_parcheggi.py` (workflow `.github/workflows/pubblica.yml`), scarica da OpenStreetMap i parcheggi delle zone elencate in `ZONE` e li salva nella cartella `osm/` divisi in tessere. Nelle zone coperte l'app legge da lì; fuori zona interroga i server pubblici. Il workflow pubblica anche il sito a ogni caricamento di file (impostazione Pages: *Source = GitHub Actions*). Per farlo partire subito: Actions → *Pubblica sito e aggiorna parcheggi* → *Run workflow*.
-
-Alla fine dello scaricamento arriva una notifica sull'iPhone con l'app **ntfy** (✅ tutto aggiornato, ⚠️ solo in parte, ❌ fallito). Il nome del canale va messo nel secret del repository `NTFY_TOPIC` (Settings → Secrets and variables → Actions); senza il secret la notifica viene saltata.
+Ogni lunedì GitHub esegue `aggiorna_parcheggi.py` (workflow `.github/workflows/pubblica.yml`): scarica da OpenStreetMap i parcheggi
+delle 12 province della Lombardia (zone in `ZONE`, stesso schema di Trekking), una alla volta e allargate di 3 km per lato, e li salva
+nella cartella `osm/`, una sottocartella per provincia (`osm/milano/`, `osm/pavia/`, …), divisi in tessere da 0,02°.
+Se una provincia non si scarica, resta quella della settimana prima. Nelle zone l'app legge da lì; fuori dalla Lombardia interroga
+i server pubblici. Il workflow pubblica anche il sito a ogni caricamento di file (impostazione Pages: *Source = GitHub Actions*).
+Per farlo partire subito: Actions → *Pubblica sito e aggiorna parcheggi* → *Run workflow* (ci vogliono 20–60 minuti).
 
 ## Aggiungere la tua città
 
