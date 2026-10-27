@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=32">
+  <link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
   <div class="app">
@@ -39,7 +39,6 @@
 
     <main class="corpo">
       <div id="mappa" class="mappa" role="application" aria-label="Mappa dei parcheggi"></div>
-      <div class="filigrana" id="filigrana" aria-hidden="true"><span id="filigrana-testo">Versione</span></div>
 
       <div class="fab-col">
         <button class="fab" id="btn-centra" type="button" title="Torna alla mia posizione" aria-label="Torna alla mia posizione">
@@ -66,7 +65,11 @@
 
     <section class="pannello" id="pannello" aria-label="Posti vicini" hidden>
       <header class="pannello-testa">
-        <h2>Posti vicini</h2>
+        <h2>PostoLibero</h2>
+        <a class="condividi" id="btn-condividi" href="https://wa.me/" target="_blank" rel="noopener" aria-label="Condividi l'app con un amico su WhatsApp">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8.6 8.4c.2-.5.5-.5.8-.5h.5c.2 0 .4 0 .5.4l.7 1.6c.1.2 0 .4-.1.6l-.5.6c-.1.1-.2.3 0 .5.6 1 1.4 1.8 2.4 2.4.2.1.4.1.5 0l.6-.7c.2-.2.4-.2.6-.1l1.6.7c.3.1.4.3.4.5v.5c0 .3-.1.7-.6.9-.5.3-1.4.5-2.6.1a9 9 0 0 1-4.6-4.3c-.6-1.2-.4-2.2-.2-2.7Z" fill="currentColor"/></svg>
+          <span class="condividi-testo">Condividi</span>
+        </a>
         <button class="btn-help" id="btn-guida" type="button" aria-label="Apri la guida all'app" aria-controls="guida" aria-expanded="false">HELP</button>
         <button class="chiudi" id="btn-chiudi" type="button" aria-label="Chiudi l'elenco e torna alla mappa">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
@@ -135,6 +138,7 @@
           ZTL: open data dei Comuni di Milano (CC BY 4.0), Bergamo e Cremona, mappa dei varchi del Comune di Pavia, OpenStreetMap; fa sempre fede la segnaletica.
           Le aree di sosta OSM indicano dove si può parcheggiare, non se c'è posto in questo momento.
         </footer>
+        <p class="versione" id="elenco-versione"></p>
       </div>
     </section>
 
@@ -237,7 +241,8 @@
             <li>Su iPhone: in Safari tocca <b>Condividi → Aggiungi alla schermata Home</b> per usarla come un'app.</li>
             <li>Al primo avvio consenti l'accesso alla <b>posizione</b>. Tocca la mappa una volta per abilitare suoni e voce.</li>
             <li>Con l'interruttore del <b>silenzioso</b> attivo i suoni non si sentono.</li>
-            <li>Il numero di <b>versione</b> scritto sulla mappa ti dice se hai l'ultimo aggiornamento.</li>
+            <li>Ti è utile? In alto nella pagina Elenco tocca il pulsante verde <b>Condividi</b>: si apre WhatsApp con un messaggio già scritto e il link all'app.</li>
+            <li>Il numero di <b>versione</b>, nell'ultima riga della pagina Elenco, ti dice se hai l'ultimo aggiornamento.</li>
           </ul>
         </section>
       </div>
@@ -247,10 +252,10 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="config.js?v=32"></script>
-  <script src="core.js?v=32"></script>
-  <script src="segnalazioni.js?v=32"></script>
-  <script src="app.js?v=32"></script>
+  <script src="config.js?v=33"></script>
+  <script src="core.js?v=33"></script>
+  <script src="segnalazioni.js?v=33"></script>
+  <script src="app.js?v=33"></script>
   <!-- Statistiche d'uso anonime, senza cookie: https://parcheggi.goatcounter.com -->
   <script data-goatcounter="https://parcheggi.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
