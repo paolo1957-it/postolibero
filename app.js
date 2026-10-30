@@ -644,6 +644,7 @@
       if (l.orari) righe.push("Orari: " + esc(l.orari));
       if (l.note) righe.push(esc(l.note));
       if (l.fonteNome) righe.push("Fonte: " + esc(l.fonteNome));
+      else if (l.fonte === "osm") righe.push(`Fonte: OpenStreetMap · <a href="https://www.openstreetmap.org/${attr(l.id)}" target="_blank" rel="noopener">Vedi su OpenStreetMap</a>`);
     }
     const zona = zonaLuogo(l);
     if (zona) {
