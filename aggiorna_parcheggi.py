@@ -274,6 +274,9 @@ def main():
             togli(nome)
 
     indice["fonte"] = "© OpenStreetMap contributors (ODbL)"
+    indice["licenza"] = "Open Database License (ODbL) 1.0"
+    indice["licenza_url"] = "https://opendatacommons.org/licenses/odbl/1-0/"
+    indice["generato_da"] = "https://github.com/paolo1957-it/postolibero"
     with open(indice_path, "w") as f:
         json.dump(indice, f, indent=1, ensure_ascii=False)
     totale = sum(z.get("elementi", 0) for z in indice["zone"].values())
