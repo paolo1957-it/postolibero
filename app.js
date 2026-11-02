@@ -833,12 +833,13 @@
     const { latitude: lat, longitude: lon, accuracy: acc } = p.coords;
     stato.gps = { lat, lon, acc };
     if (!marcatoreIo) {
-      marcatoreIo = L.marker([lat, lon], { icon: L.divIcon({ className: "", html: '<div class="io"></div>', iconSize: [18, 18] }), zIndexOffset: 1000, interactive: false }).addTo(livelli.io);
+      marcatoreIo = L.marker([lat, lon], { icon: L.divIcon({ className: "", html: '<div class="io-box"><div class="io-cono" hidden></div><div class="io"></div></div>', iconSize: [18, 18] }), zIndexOffset: 1000, interactive: false }).addTo(livelli.io);
       cerchioPrecisione = L.circle([lat, lon], { radius: acc, color: "#2f7cf6", weight: 0, fillOpacity: .12, interactive: false }).addTo(livelli.io);
     } else {
       marcatoreIo.setLatLng([lat, lon]);
       cerchioPrecisione.setLatLng([lat, lon]).setRadius(acc);
     }
+    if (window.QuiBussola) QuiBussola.gps(p.coords);   // cono dell'orientamento (bussola.js)
     $("btn-libero").disabled = false;
     $("btn-parcheggiato").disabled = false;
     if (stato.seguiGps) impostaCentro(lat, lon, true);
