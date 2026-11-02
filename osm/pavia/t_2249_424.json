@@ -1,1 +1,1 @@
-{"elements":[{"type":"way","id":406646855,"tags":{"amenity":"parking","capacity":"2","capacity:disabled":"1","fee":"no","name":"Parcheggio"},"center":{"lat":44.999666,"lon":8.482921}}]}
+{"elements":[{"type":"way","id":406646855,"tags":{"amenity":"parking","capacity":"2","capacity:disabled":"1","fee":"no","name":"Parcheggio","parking":"street_side"},"center":{"lat":44.999666,"lon":8.482921}},{"type":"way","id":1561290538,"tags":{"access":"customers","amenity":"parking","fee":"no","parking":"surface","_postiStimati":"11"},"center":{"lat":44.999963,"lon":8.483016}}]}
