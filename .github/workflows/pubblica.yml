@@ -94,7 +94,7 @@ jobs:
           else:
               msg = ("Parcheggi aggiornati", f"Tutte le {tot} zone e le ZTL sono aggiornate.", "white_check_mark", 3)
           titolo, testo, tag, prio = msg
-          corpo = {"topic": os.environ["NTFY_TOPIC"], "title": "PostoLibero: " + titolo,
+          corpo = {"topic": os.environ["NTFY_TOPIC"], "title": "Qui-Parking: " + titolo,
                    "message": testo, "tags": [tag], "priority": prio, "click": os.environ["LINK"]}
           req = urllib.request.Request("https://ntfy.sh/", data=json.dumps(corpo).encode(),
                                        headers={"Content-Type": "application/json"})

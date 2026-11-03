@@ -1,4 +1,4 @@
-# PostoLibero
+# Qui-Parking
 
 Web app per il telefono che mostra dove parcheggiare entro 1 km dalla tua posizione (raggio regolabile a 500 m o 2 km).
 
@@ -16,7 +16,7 @@ L'elenco mette prima i posti sicuramente liberi (segnalati o in tempo reale), po
 
 Il GPS del browser funziona solo su **HTTPS**, quindi l'app va messa online:
 
-1. **Netlify Drop**: vai su https://app.netlify.com/drop e trascina la cartella `postolibero`. Ottieni subito un indirizzo https.
+1. **Netlify Drop**: vai su https://app.netlify.com/drop e trascina la cartella `Parking`. Ottieni subito un indirizzo https.
 2. Oppure **GitHub Pages**: crea un repository, carica i file, poi Settings → Pages → Deploy from branch.
 
 Apri l'indirizzo dal telefono, consenti la posizione e scegli "Aggiungi a schermata Home" per usarla come un'app.
@@ -71,4 +71,4 @@ In `config.js` → `openData` aggiungi il dataset del tuo comune. I campi più c
 ## Statistiche d'uso
 
 Statistiche anonime, senza cookie, con GoatCounter: https://parcheggi.goatcounter.com (si accede con l'account GoatCounter di Paolo).
-La guida è anche una pagina a sé: `guida.html` (https://paolo1957-it.github.io/postolibero/guida.html).
+La guida è anche una pagina a sé: `guida.html` (https://quivicino.github.io/Parking/guida.html).

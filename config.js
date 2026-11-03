@@ -1,5 +1,5 @@
 /*
- * PostoLibero – configurazione
+ * Qui-Parking – configurazione
  * Modifica questo file per attivare le segnalazioni condivise e le fonti open data.
  */
 window.POSTOLIBERO_CONFIG = {

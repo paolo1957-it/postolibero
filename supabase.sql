@@ -1,4 +1,4 @@
--- PostoLibero: tabella delle segnalazioni condivise.
+-- Qui-Parking: tabella delle segnalazioni condivise.
 -- Esegui questo script in Supabase → SQL Editor → New query → Run.
 
 create table if not exists public.segnalazioni (

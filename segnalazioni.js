@@ -1,5 +1,5 @@
 /*
- * PostoLibero – segnalazioni degli utenti.
+ * Qui-Parking – segnalazioni degli utenti.
  * Con Supabase configurato: condivise tra tutti gli utenti (API REST, nessuna libreria).
  * Senza: salvate solo in questo browser (localStorage).
  */
