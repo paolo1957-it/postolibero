@@ -1,5 +1,5 @@
 /*
- * PostoLibero – cono azzurro dell'orientamento sul pallino della posizione, come in Google Maps.
+ * Qui-Parking – cono azzurro dell'orientamento sul pallino della posizione, come in Google Maps.
  * Punta dove è rivolto il telefono (bussola). Android: evento deviceorientationabsolute, senza permessi.
  * iPhone: serve il permesso «Movimento e orientamento», chiesto al tocco del pulsante della posizione
  * (e poi al primo tocco, se già concesso una volta). Senza bussola, in movimento segue la direzione del GPS

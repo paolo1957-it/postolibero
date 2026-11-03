@@ -1,5 +1,5 @@
 /*
- * PostoLibero – interfaccia: mappa, posizione, caricamento dati, elenco.
+ * Qui-Parking – interfaccia: mappa, posizione, caricamento dati, elenco.
  */
 (function () {
   "use strict";
@@ -939,7 +939,7 @@
   // Condividi su WhatsApp: messaggio già scritto con il link all'app (?ref=whatsapp per GoatCounter)
   const linkApp = location.origin + location.pathname + "?ref=whatsapp";
   $("btn-condividi").href = "https://wa.me/?text=" + encodeURIComponent(
-    "Ti consiglio PostoLibero: trovi parcheggi e posti auto liberi vicino a te. " +
+    "Ti consiglio Qui-Parking: trovi parcheggi e posti auto liberi vicino a te. " +
     "Gratis e senza registrazione: " + linkApp);
   $("btn-condividi").addEventListener("click", () => {
     if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: "condividi-whatsapp", title: "Condividi su WhatsApp", event: true });

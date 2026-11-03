@@ -1,5 +1,5 @@
 /*
- * PostoLibero – «Installa l'app»: aiuta a mettere l'icona sulla schermata Home.
+ * Qui-Parking – «Installa l'app»: aiuta a mettere l'icona sulla schermata Home.
  * Android/Chrome: pulsante che apre la finestra di installazione del telefono.
  * iPhone/iPad: i passaggi di Safari (Condividi → Aggiungi alla schermata Home).
  * Dentro WhatsApp, Facebook o Instagram non si può installare: spiega come aprire la pagina nel browser.
@@ -44,7 +44,7 @@
   function contenuto() {
     if (dentroApp) {
       return {
-        html: "<p>Adesso PostoLibero è aperta <b>dentro un'altra app</b> (WhatsApp, Facebook…): da qui non si può mettere l'icona.</p>" +
+        html: "<p>Adesso Qui-Parking è aperta <b>dentro un'altra app</b> (WhatsApp, Facebook…): da qui non si può mettere l'icona.</p>" +
           passi([
             "Tocca " + (ios ? ICONA.puntiniOr + " o " + ICONA.condividi : ICONA.puntini) + " in alto o in basso.",
             "Scegli <b>Apri in " + (ios ? "Safari" : "Chrome") + "</b> (o «Apri nel browser»).",
@@ -69,14 +69,14 @@
         html: passi([
           "Tocca " + ICONA.condividi + " <b>Condividi</b> nella barra di Safari (in basso, o in alto sull'iPad). Se non lo vedi, tocca prima " + ICONA.righe + " a sinistra dell'indirizzo.",
           "Scorri e tocca " + ICONA.piu + " <b>Aggiungi alla schermata Home</b>.",
-          "Tocca <b>Aggiungi</b> in alto a destra: l'icona di PostoLibero compare sulla schermata Home."
+          "Tocca <b>Aggiungi</b> in alto a destra: l'icona di Qui-Parking compare sulla schermata Home."
         ]),
         pulsante: "Ho capito", azione: chiudi
       };
     }
     if (richiesta) {
       return {
-        html: "<p>Tocca <b>Installa</b> e conferma: l'icona di PostoLibero compare sulla schermata Home.</p>",
+        html: "<p>Tocca <b>Installa</b> e conferma: l'icona di Qui-Parking compare sulla schermata Home.</p>",
         pulsante: "Installa", azione: installa
       };
     }
@@ -94,7 +94,7 @@
   function apri() {
     const c = contenuto();
     // Su Android il browser parla di «Installa app»: usiamo la stessa parola
-    $("installa-titolo").textContent = (android ? "Installa" : "Metti") + " PostoLibero sul telefono";
+    $("installa-titolo").textContent = (android ? "Installa" : "Metti") + " Qui-Parking sul telefono";
     corpo.innerHTML = c.html;
     ok.textContent = c.pulsante;
     azione = c.azione;
@@ -147,7 +147,7 @@
     richiesta = null;
     chiudi();
     voce.hidden = true;
-    avviso("Fatto! Trovi PostoLibero sulla schermata Home.");
+    avviso("Fatto! Trovi Qui-Parking sulla schermata Home.");
   });
   aggiornaVoce();
 

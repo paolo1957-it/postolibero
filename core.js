@@ -1,5 +1,5 @@
 /*
- * PostoLibero – logica pura (nessun accesso a DOM o rete).
+ * Qui-Parking – logica pura (nessun accesso a DOM o rete).
  * Funziona sia nel browser (window.PL) sia in Node (module.exports) per i test.
  */
 (function (root) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PostoLibero – scarica una volta alla settimana i parcheggi di OpenStreetMap di tutta la Lombardia
+Qui-Parking – scarica una volta alla settimana i parcheggi di OpenStreetMap di tutta la Lombardia
 e li salva nel sito, divisi in "tessere". Stesso schema di Trekking: una zona per provincia,
 ognuna con la sua cartella (osm/milano/, osm/pavia/, …).
 
@@ -48,7 +48,7 @@ SERVER = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
 ]
-USER_AGENT = "PostoLibero/1.0 (https://github.com/paolo1957-it/postolibero)"
+USER_AGENT = "Qui-Parking/1.0 (https://github.com/quivicino/Parking)"
 
 PASSO = 0.02            # lato della tessera in gradi (circa 2,2 km × 1,6 km)
 CARTELLA = "osm"        # dove vengono salvate le tessere nel sito
@@ -276,7 +276,7 @@ def main():
     indice["fonte"] = "© OpenStreetMap contributors (ODbL)"
     indice["licenza"] = "Open Database License (ODbL) 1.0"
     indice["licenza_url"] = "https://opendatacommons.org/licenses/odbl/1-0/"
-    indice["generato_da"] = "https://github.com/paolo1957-it/postolibero"
+    indice["generato_da"] = "https://github.com/quivicino/Parking"
     with open(indice_path, "w") as f:
         json.dump(indice, f, indent=1, ensure_ascii=False)
     totale = sum(z.get("elementi", 0) for z in indice["zone"].values())

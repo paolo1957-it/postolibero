@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PostoLibero – raccoglie le Zone a Traffico Limitato (ZTL) della Lombardia e le salva in ztl.json.
+Qui-Parking – raccoglie le Zone a Traffico Limitato (ZTL) della Lombardia e le salva in ztl.json.
 
 Lo esegue GitHub da solo una volta alla settimana (vedi .github/workflows/pubblica.yml).
 
@@ -25,7 +25,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 
-USER_AGENT = "PostoLibero/1.0 (https://github.com/paolo1957-it/postolibero)"
+USER_AGENT = "Qui-Parking/1.0 (https://github.com/quivicino/Parking)"
 FILE_USCITA = "ztl.json"
 
 MILANO_AREE = ("https://dati.comune.milano.it/dataset/d7d9179a-8228-427f-9c86-1e30154be4fe/resource/"
