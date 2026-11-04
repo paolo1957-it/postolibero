@@ -278,7 +278,31 @@
   <script src="app.js?v=35"></script>
   <script src="installa.js?v=35"></script>
   <script src="bussola.js?v=35"></script>
-  <!-- Statistiche d'uso anonime, senza cookie: https://parcheggi.goatcounter.com -->
-  <script data-goatcounter="https://parcheggi.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+  <!-- Statistiche d'uso anonime, senza cookie: https://parcheggi.goatcounter.com
+       I dispositivi del team (segnati una volta aprendo l'app con ?gc_team=nome-dispositivo,
+       tolti con ?gc_team=off) contano a parte su https://quivicino-team.goatcounter.com -->
+  <script>
+    (function () {
+      var endpoint = "https://parcheggi.goatcounter.com/count";
+      try {
+        var q = new URLSearchParams(location.search).get("gc_team");
+        if (q === "off") { localStorage.removeItem("gc_team"); alert("Questo dispositivo ora conta come un visitatore normale."); }
+        else if (q) {
+          q = q.toLowerCase().replace(/[^a-z0-9-]/g, "");
+          if (q) { localStorage.setItem("gc_team", q); alert("Dispositivo segnato come \u201c" + q + "\u201d: le visite contano a parte."); }
+        }
+        var team = localStorage.getItem("gc_team");
+        if (team) {
+          endpoint = "https://quivicino-team.goatcounter.com/count";
+          window.goatcounter = { path: function (p) { return "/" + team + p.split("?")[0]; } };
+        }
+      } catch (e) {}
+      var s = document.createElement("script");
+      s.async = true;
+      s.src = "https://gc.zgo.at/count.js";
+      s.setAttribute("data-goatcounter", endpoint);
+      document.head.appendChild(s);
+    })();
+  </script>
 </body>
 </html>
