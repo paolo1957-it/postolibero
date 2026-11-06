@@ -24,7 +24,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
-# Le 12 province della Lombardia (riquadri arrotondati per eccesso: comprendono anche
+# Le 12 province della Lombardia e la Valle d'Aosta (riquadri arrotondati per eccesso: comprendono anche
 # un po' delle regioni vicine, che non fa male)
 ZONE = {
     "Varese": (45.53, 8.50, 46.17, 9.01),
@@ -39,8 +39,9 @@ ZONE = {
     "Lodi": (45.07, 9.32, 45.44, 9.89),
     "Cremona": (44.97, 9.42, 45.48, 10.54),
     "Mantova": (44.89, 10.11, 45.44, 11.43),
+    "Valle d'Aosta": (45.46, 6.80, 45.99, 7.94),
 }
-MARGINE_KM = 3      # raggio massimo dell'app (2 km) + un po' di scorta
+MARGINE_KM = 15     # come Trekking e Bike: 15 km oltre i confini di ogni zona
 
 SERVER = [
     "https://overpass.private.coffee/api/interpreter",
