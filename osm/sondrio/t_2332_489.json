@@ -1,1 +1,1 @@
-{"elements":[{"type":"node","id":12042138353,"tags":{"amenity":"parking","fee":"yes"},"lat":46.640505,"lon":9.792758}]}
+{"elements":[{"type":"node","id":492816911,"tags":{"amenity":"parking","capacity":"10","fee":"yes","parking":"surface"},"lat":46.640731,"lon":9.793375},{"type":"node","id":12042138353,"tags":{"amenity":"parking","fee":"yes"},"lat":46.640505,"lon":9.792758}]}

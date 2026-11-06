@@ -1,1 +1,1 @@
-{"elements":[{"type":"node","id":14144176797,"tags":{"amenity":"parking_space","parking_space":"disabled"},"lat":45.193174,"lon":8.518355},{"type":"way","id":1555032265,"tags":{"access":"yes","amenity":"parking","capacity:disabled":"1","fee":"no","parking":"street_side"},"center":{"lat":45.193154,"lon":8.5183}}]}
+{"elements":[{"type":"node","id":6445382727,"tags":{"amenity":"parking"},"lat":45.193165,"lon":8.518255}]}

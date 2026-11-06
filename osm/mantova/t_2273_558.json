@@ -1,1 +1,1 @@
-{"elements":[{"type":"way","id":307481918,"tags":{"amenity":"parking","_postiStimati":"15"},"center":{"lat":45.466792,"lon":11.179706}}]}
+{"elements":[{"type":"node","id":1821569340,"tags":{"amenity":"parking"},"lat":45.467093,"lon":11.176677},{"type":"way","id":307481918,"tags":{"amenity":"parking","_postiStimati":"15"},"center":{"lat":45.466792,"lon":11.179706}}]}
