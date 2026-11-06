@@ -7,7 +7,7 @@ Lo esegue GitHub da solo una volta alla settimana (vedi .github/workflows/pubbli
 Fonti, dalla più affidabile:
   1. Open data ufficiali dei Comuni (Milano, Bergamo, Cremona)
   2. Mappa dei varchi del Comune di Pavia (Google My Maps, esportata in KML)
-  3. OpenStreetMap: aree "boundary=limited_traffic_zone" in tutta la Lombardia
+  3. OpenStreetMap: aree "boundary=limited_traffic_zone" in Lombardia e Valle d'Aosta
      (solo dove il Comune non pubblica dati propri)
 
 Ogni area in ztl.json ha: tipo ("ztl", "pedonale", "area_c"), nome, città, fonte.
@@ -48,7 +48,7 @@ OVERPASS = [
     "https://overpass.kumi.systems/api/interpreter",
 ]
 QUERY_OSM = """[out:json][timeout:300];
-area["ISO3166-2"="IT-25"]["admin_level"="4"]->.lom;
+area["ISO3166-2"~"^IT-(25|23)$"]["admin_level"="4"]->.lom;
 (
   relation["boundary"="limited_traffic_zone"](area.lom);
   way["boundary"="limited_traffic_zone"](area.lom);

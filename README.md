@@ -37,12 +37,12 @@ Senza configurazione le segnalazioni restano sul tuo telefono. Per condividerle 
 - **Milano**: parcheggi pubblici e parcheggi di interscambio del Comune (nome e numero di posti, non in tempo reale). File `milano-interscambio.geojson`; i parcheggi pubblici vengono scaricati dal portale del Comune, oppure dal file `milano-parcheggi-pubblici.geojson` se lo carichi nel sito.
 - **Pavia**: i dataset pubblicati non hanno coordinate, quindi si usano OpenStreetMap e le segnalazioni.
 
-## Parcheggi salvati nel sito (tutta la Lombardia)
+## Parcheggi salvati nel sito (Lombardia e Valle d'Aosta)
 
 Ogni lunedì GitHub esegue `aggiorna_parcheggi.py` (workflow `.github/workflows/pubblica.yml`): scarica da OpenStreetMap i parcheggi
-delle 12 province della Lombardia (zone in `ZONE`, stesso schema di Trekking), una alla volta e allargate di 3 km per lato, e li salva
+delle 12 province della Lombardia e della Valle d'Aosta (zone in `ZONE`, stesso schema di Trekking), una alla volta e allargate di 15 km per lato, e li salva
 nella cartella `osm/`, una sottocartella per provincia (`osm/milano/`, `osm/pavia/`, …), divisi in tessere da 0,02°.
-Se una provincia non si scarica, resta quella della settimana prima. Nelle zone l'app legge da lì; fuori dalla Lombardia interroga
+Se una provincia non si scarica, resta quella della settimana prima. Nelle zone l'app legge da lì; fuori da queste zone interroga
 i server pubblici. Il workflow pubblica anche il sito a ogni caricamento di file (impostazione Pages: *Source = GitHub Actions*).
 Per farlo partire subito: Actions → *Pubblica sito e aggiorna parcheggi* → *Run workflow* (ci vogliono 20–60 minuti).
 
