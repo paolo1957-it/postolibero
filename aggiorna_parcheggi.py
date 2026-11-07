@@ -87,7 +87,7 @@ out tags geom;"""
 # osm_italia.py estrae ogni giorno dal PBF Italia di Geofabrik gli stessi oggetti della query qui sopra
 # e li carica sulla release dati-osm. Con la copia si copre tutta l'Italia, divisa in zone di 1 grado
 # (circa 111 × 78 km) allargate di MARGINE_COPIA_KM: basta coprire il raggio più grande dell'app (2 km + 150 m).
-COPIA_PC = os.environ.get("COPIA_PC") or "https://github.com/quivicino/postolibero/releases/download/dati-osm/parcheggi.json.gz"
+COPIA_PC = os.environ.get("COPIA_PC") or "https://github.com/quivicino/Parking/releases/download/dati-osm/parcheggi.json.gz"
 GIORNI_COPIA = 3
 MARGINE_COPIA_KM = 3
 LATO_ZONA = 1
