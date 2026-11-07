@@ -12,6 +12,7 @@ Per aggiungere o cambiare una zona basta una riga in ZONE:
     "nome": (latitudine sud, longitudine ovest, latitudine nord, longitudine est)
 I valori si trovano su https://bboxfinder.com
 """
+import gzip
 import json
 import math
 import os
@@ -80,6 +81,59 @@ way["highway"]{a}->.strade;
   way.strade[~"^parking:lane:(both|left|right)$"~"{SOSTA_VECCHIA}"];
 );
 out tags geom;"""
+
+
+# ---------- Copia del computer di paolo (PBF Italia) ----------
+# osm_italia.py estrae ogni giorno dal PBF Italia di Geofabrik gli stessi oggetti della query qui sopra
+# e li carica sulla release dati-osm. Con la copia si copre tutta l'Italia, divisa in zone di 1 grado
+# (circa 111 × 78 km) allargate di MARGINE_COPIA_KM: basta coprire il raggio più grande dell'app (2 km + 150 m).
+COPIA_PC = os.environ.get("COPIA_PC") or "https://github.com/quivicino/postolibero/releases/download/dati-osm/parcheggi.json.gz"
+GIORNI_COPIA = 3
+MARGINE_COPIA_KM = 3
+LATO_ZONA = 1
+
+
+def da_copia_pc():
+    print(f"Scarico la copia del computer: {COPIA_PC} …", flush=True)
+    req = urllib.request.Request(COPIA_PC, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=600) as r:
+        j = json.loads(gzip.decompress(r.read()).decode("utf-8"))
+    base = (j.get("osm3s") or {}).get("timestamp_osm_base") or ""
+    quando = datetime.strptime(base, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    if (datetime.now(timezone.utc) - quando).total_seconds() / 86400 >= GIORNI_COPIA:
+        raise ValueError(f"copia troppo vecchia (dati OSM del {base})")
+    elementi = j.get("elements") or []
+    if len(elementi) < 10000:
+        raise ValueError(f"troppo pochi elementi ({len(elementi)}): copia incompleta?")
+    print(f"  {len(elementi)} elementi, dati OSM del {base}")
+    return elementi, base
+
+
+def zone_italia(elementi):
+    """Zone di LATO_ZONA gradi che contengono almeno un elemento, ognuna con i suoi elementi."""
+    con_punto = []
+    celle = set()
+    for el in elementi:
+        p = punto(el)
+        if p:
+            con_punto.append((p, el))
+            celle.add((math.floor(p[0] / LATO_ZONA), math.floor(p[1] / LATO_ZONA)))
+    dlat = MARGINE_COPIA_KM / 111.32
+    zone = {}
+    for i, j in sorted(celle):
+        s, w = i * LATO_ZONA, j * LATO_ZONA
+        n, e = s + LATO_ZONA, w + LATO_ZONA
+        dlon = MARGINE_COPIA_KM / (111.32 * math.cos(math.radians(s + LATO_ZONA / 2)))
+        largo = tuple(round(x, 4) for x in (s - dlat, w - dlon, n + dlat, e + dlon))
+        zone[f"Italia {s}N {w}E"] = {"bbox": (s, w, n, e), "largo": largo, "elementi": []}
+    for (la, lo), el in con_punto:
+        for i in (math.floor((la - dlat) / LATO_ZONA), math.floor((la + dlat) / LATO_ZONA)):
+            for j in range(math.floor((lo - 0.05) / LATO_ZONA), math.floor((lo + 0.05) / LATO_ZONA) + 1):
+                z = zone.get(f"Italia {i * LATO_ZONA}N {j * LATO_ZONA}E")
+                if z and z["largo"][0] <= la <= z["largo"][2] and z["largo"][1] <= lo <= z["largo"][3] \
+                        and (not z["elementi"] or z["elementi"][-1] is not el):
+                    z["elementi"].append(el)
+    return zone
 
 
 def scarica(q):
@@ -226,18 +280,46 @@ def main():
     # restano finché la provincia nuova non è scaricata, così l'app non resta mai senza dati.
     vecchie = [k for k, z in indice["zone"].items() if not z.get("cartella")]
 
+    # Prima la copia del computer (tutta l'Italia); Overpass sulle province della Lombardia solo come riserva
+    copia, dati_osm = None, None
+    try:
+        elementi_copia, dati_osm = da_copia_pc()
+        if indice.get("dati_osm") == dati_osm and os.environ.get("FORZA") != "1":
+            print("I dati della copia sono già quelli salvati: niente da fare.")
+            if os.environ.get("ESITO"):
+                with open(os.environ["ESITO"], "w") as f:
+                    f.write(f"{len(indice['zone'])};{len(indice['zone'])}\n")
+            return
+        copia = zone_italia(elementi_copia)
+        del elementi_copia
+    except Exception as ex:
+        print(f"Copia del computer non disponibile ({ex}).")
+        if indice.get("dati_osm"):
+            # i dati di tutta l'Italia presi dal computer restano nel repository: Overpass sulla sola
+            # Lombardia ridurrebbe la zona coperta
+            print(f"Restano i parcheggi della copia del {indice['dati_osm']}.")
+            if os.environ.get("ESITO"):
+                with open(os.environ["ESITO"], "w") as f:
+                    f.write(f"0;{len(indice['zone'])}\n")
+            return
+    zone_lavoro = {k: v["bbox"] for k, v in copia.items()} if copia else ZONE
+
     errori = 0
-    for n, (nome, bbox) in enumerate(ZONE.items()):
-        if n:
-            time.sleep(20)          # un attimo di pausa tra una zona e l'altra, per i server
+    for n, (nome, bbox) in enumerate(zone_lavoro.items()):
         print(f"{nome}…")
-        largo = allarga(*bbox)
-        try:
-            elementi = scarica(query(*largo))
-        except Exception as ex:
-            print(f"  {nome} NON aggiornata, resta la versione precedente: {ex}")
-            errori += 1
-            continue
+        if copia:
+            largo = copia[nome]["largo"]
+            elementi = copia[nome]["elementi"]
+        else:
+            if n:
+                time.sleep(20)          # un attimo di pausa tra una zona e l'altra, per i server
+            largo = allarga(*bbox)
+            try:
+                elementi = scarica(query(*largo))
+            except Exception as ex:
+                print(f"  {nome} NON aggiornata, resta la versione precedente: {ex}")
+                errori += 1
+                continue
         tessere = {}
         visti = set()
         for el in elementi:
@@ -269,10 +351,11 @@ def main():
         dim = sum(os.path.getsize(os.path.join(CARTELLA, cartella, t)) for t in tessere)
         print(f"  {len(visti)} elementi in {len(tessere)} tessere ({dim // 1024} KB)")
 
-    # Zone non più in ZONE: si tolgono quando tutte le province sono state scaricate
+    # Zone non più in uso: si tolgono quando tutte le zone sono state scaricate
     if errori == 0:
-        for nome in [k for k in indice["zone"] if k not in ZONE]:
+        for nome in [k for k in indice["zone"] if k not in zone_lavoro]:
             togli(nome)
+    indice["dati_osm"] = dati_osm if copia else None   # data dei dati della copia del computer
 
     indice["fonte"] = "© OpenStreetMap contributors (ODbL)"
     indice["licenza"] = "Open Database License (ODbL) 1.0"
@@ -281,13 +364,13 @@ def main():
     with open(indice_path, "w") as f:
         json.dump(indice, f, indent=1, ensure_ascii=False)
     totale = sum(z.get("elementi", 0) for z in indice["zone"].values())
-    print(f"Totale: {totale} elementi, {len(ZONE) - errori} zone aggiornate su {len(ZONE)}")
+    print(f"Totale: {totale} elementi, {len(zone_lavoro) - errori} zone aggiornate su {len(zone_lavoro)}")
 
     # Per la notifica sull'iPhone: riga "zone aggiornate;zone totali" (vedi .github/workflows/pubblica.yml)
     if os.environ.get("ESITO"):
         with open(os.environ["ESITO"], "w") as f:
-            f.write(f"{len(ZONE) - errori};{len(ZONE)}\n")
-    if errori == len(ZONE):
+            f.write(f"{len(zone_lavoro) - errori};{len(zone_lavoro)}\n")
+    if errori == len(zone_lavoro):
         sys.exit(1)
 
 
