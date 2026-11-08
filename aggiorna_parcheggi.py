@@ -95,10 +95,20 @@ LATO_ZONA = 1
 
 def da_copia_pc():
     print(f"Scarico la copia del computer: {COPIA_PC} …", flush=True)
-    req = urllib.request.Request(COPIA_PC, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=600) as r:
-        j = json.loads(gzip.decompress(r.read()).decode("utf-8"))
+    def leggi(url):
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(req, timeout=600) as r:
+            return json.loads(gzip.decompress(r.read()).decode("utf-8"))
+    j = leggi(COPIA_PC)
     base = (j.get("osm3s") or {}).get("timestamp_osm_base") or ""
+    # un file molto grande viene diviso in parti (parcheggi-2.json.gz, …), elencate in "parti"
+    for nome in j.get("parti") or []:
+        url = COPIA_PC.rsplit("/", 1)[0] + "/" + nome
+        print(f"  parte {url} …", flush=True)
+        p = leggi(url)
+        if (p.get("osm3s") or {}).get("timestamp_osm_base") != base:
+            raise ValueError(f"la parte {nome} è di un altro giorno")
+        j["elements"].extend(p.get("elements") or [])
     quando = datetime.strptime(base, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
     if (datetime.now(timezone.utc) - quando).total_seconds() / 86400 >= GIORNI_COPIA:
         raise ValueError(f"copia troppo vecchia (dati OSM del {base})")
