@@ -1,0 +1,1 @@
+{"elements":[{"type":"node","id":3216610420,"tags":{"amenity":"parking"},"lat":41.526127,"lon":14.559762},{"type":"way","id":1088189608,"tags":{"highway":"residential","name":"Via Alessandro Volta","parking:lane:right":"perpendicular","parking:lane:right:capacity":"8"},"geometry":[{"lat":41.527462,"lon":14.556399},{"lat":41.527527,"lon":14.556193}]}]}
